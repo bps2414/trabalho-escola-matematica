@@ -4,7 +4,7 @@
 
 Jogo cooperativo para **um celular só**. Cada jogador vê pistas secretas sobre um número. O grupo junta as pistas falando, sem mostrar a tela, e tenta abrir o cofre antes do alarme.
 
-- 3 a 6 jogadores, 3 fases (bronze 1–20, prata 1–50, ouro 1–30)
+- 3 a 6 jogadores, 3 fases (bronze 1–20, prata 1–30, ouro 1–30)
 - 2 minutos e 3 tentativas por fase
 - A fase 3 tem uma pista de **domínio de função**
 

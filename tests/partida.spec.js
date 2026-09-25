@@ -159,13 +159,17 @@ test('partida completa do Cofre', async ({ page }) => {
   await expect(page.locator('#fase-nome')).toHaveText('Cofre de prata');
   await cortinaAberta(page);
   pistas = await distribuirPistas(page);
-  await expect(page.locator('#quadro button')).toHaveCount(50);
+  await expect(page.locator('#quadro button')).toHaveCount(30);
 
+  // Quem tem a pista de tabuada revê e encontra a lista da tabuada escrita.
+  const donoTabuada = pistas.findIndex((lista) => lista.some((t) => t.includes('tabuada')));
   await page.getByRole('button', { name: 'Rever pista' }).click();
-  await page.getByRole('button', { name: NOMES[1], exact: true }).click();
+  await page.getByRole('button', { name: NOMES[donoTabuada], exact: true }).click();
   await expect(page.locator('#rever-fichas .ficha-oculta')).toHaveCount(2);
   await segurar(page, page.locator('#rever-segurar'));
-  expect(await pistasVisiveis(page, '#rever-fichas')).toEqual(pistas[1]);
+  expect(await pistasVisiveis(page, '#rever-fichas')).toEqual(pistas[donoTabuada]);
+  await expect(page.locator('#rever-fichas .ficha-ajuda').first()).toContainText('Tabuada do');
+  await registrar(page, 'pista-tabuada', 400);
   await page.mouse.up();
   await expect(page.locator('#rever-fichas .ficha[data-pista]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Voltar para a discussão' }).click();

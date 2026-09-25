@@ -249,6 +249,7 @@
       <div class="ficha" data-pista="${p.texto}">
         <span class="rotulo">Pista</span>
         <p class="ficha-texto">${p.texto}</p>
+        ${p.ajuda ? `<p class="ficha-ajuda">${p.ajuda}</p>` : ''}
       </div>`;
   }
 

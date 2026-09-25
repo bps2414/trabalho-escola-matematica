@@ -735,6 +735,15 @@ body[data-tela-atual="inicio"] .marca { opacity: 0; }
 }
 .ficha .rotulo { color: #7B6A45; margin-bottom: 4px; }
 .ficha-texto { margin: 0; font-size: 1.35rem; font-weight: 700; line-height: 1.3; }
+.ficha-ajuda {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #FCE9B8;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: #3D3316;
+}
 .ficha-dominio .formula {
   margin: 10px 0 8px;
   padding: 14px 8px;

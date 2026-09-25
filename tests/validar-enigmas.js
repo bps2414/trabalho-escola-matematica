@@ -11,6 +11,8 @@
 //  9. Pista de domínio sem dica, sem explicação ou sem a fórmula desenhada.
 // 10. A fase 3 não tem nenhuma pista de domínio.
 // 11. Dois enigmas com o mesmo texto de pista repetido dentro dele.
+// 12. Pista de tabuada, soma de algarismos ou dobro sem a linha de ajuda com exemplo.
+// 13. Pista com palavra difícil demais para a turma (divisor, quadrado perfeito).
 
 const FASES = require('../js/enigmas.js');
 
@@ -40,6 +42,8 @@ FASES.forEach((fase, i) => {
       if (!p.teste(enigma.resposta)) falha(onde, `a resposta não obedece "${p.texto}"`);
       if (candidatos(fase, [p]).length === 1) falha(onde, `a pista "${p.texto}" sozinha já entrega a resposta`);
       if (p.dominio && (!p.dica || !p.explica || !p.formula)) falha(onde, `pista de domínio "${p.texto}" sem dica, explicação ou fórmula`);
+      if (/tabuada|algarismos dele|dobro/i.test(p.texto) && !p.ajuda) falha(onde, `a pista "${p.texto}" precisa de ajuda com exemplo`);
+      if (/divisor|quadrado perfeito/i.test(p.texto)) falha(onde, `a pista "${p.texto}" usa palavra difícil demais`);
     });
     if (new Set(pistas.map((p) => p.texto)).size !== pistas.length) falha(onde, 'pista repetida');
 
