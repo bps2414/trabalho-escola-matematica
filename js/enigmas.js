@@ -7,9 +7,15 @@ const multiplo = (k) => (n) => n % k === 0;
 const divisor = (k) => (n) => k % n === 0;
 const somaAlgarismos = (n) => String(n).split('').reduce((s, d) => s + Number(d), 0);
 
+// Fórmulas desenhadas no cartão da pista (raiz com traço em cima, fração empilhada).
+const raiz = (dentro) => `<i>f</i>(<i>x</i>) = <span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro">${dentro}</span></span>`;
+const fracao = (cima, baixo) => `<i>f</i>(<i>x</i>) = <span class="frac"><span>${cima}</span><span>${baixo}</span></span>`;
+
 const FASES = [
   {
     nome: 'Cofre de bronze',
+    metal: 'bronze',
+    tema: 'Pistas de par, ímpar, maior e menor.',
     min: 1,
     max: 20,
     enigmas: [
@@ -50,6 +56,8 @@ const FASES = [
   },
   {
     nome: 'Cofre de prata',
+    metal: 'prata',
+    tema: 'Pistas de múltiplos e divisores.',
     min: 1,
     max: 50,
     enigmas: [
@@ -90,6 +98,8 @@ const FASES = [
   },
   {
     nome: 'Cofre de ouro',
+    metal: 'ouro',
+    tema: 'Uma das pistas é de domínio de função.',
     min: 1,
     max: 30,
     enigmas: [
@@ -97,9 +107,10 @@ const FASES = [
         resposta: 21,
         pistas: [
           {
-            texto: 'Ele está no domínio de f(x) = √(x − 20).',
-            dica: 'Não existe raiz quadrada de número negativo.',
-            explica: 'x − 20 não pode ser negativo, então x ≥ 20.',
+            texto: 'Pode entrar em f(x) = √(x − 20).',
+            formula: raiz('<i>x</i> − 20'),
+            dica: 'Não existe raiz de número negativo. Então x − 20 tem que dar 0 ou mais.',
+            explica: 'x − 20 ≥ 0, então x ≥ 20.',
             dominio: true,
             teste: (n) => n - 20 >= 0,
           },
@@ -114,16 +125,17 @@ const FASES = [
         resposta: 18,
         pistas: [
           {
-            texto: 'Ele NÃO está no domínio de f(x) = 1 / ((x − 9)·(x − 18)).',
-            dica: 'Nenhum denominador pode ser zero.',
-            explica: 'O denominador zera quando x = 9 ou x = 18. Só esses dois ficam de fora do domínio.',
+            texto: 'Pode entrar em f(x) = 10 / (x − 12).',
+            formula: fracao('10', '<i>x</i> − 12'),
+            dica: 'Não dá para dividir por zero. Então x − 12 não pode dar 0.',
+            explica: 'x − 12 = 0 quando x = 12, então o 12 fica de fora.',
             dominio: true,
-            teste: (n) => (n - 9) * (n - 18) === 0,
+            teste: (n) => n - 12 !== 0,
           },
           { texto: 'É par.', teste: par },
-          { texto: 'É maior que 10.', teste: (n) => n > 10 },
           { texto: 'É múltiplo de 3.', teste: multiplo(3) },
-          { texto: 'É menor que 25.', teste: (n) => n < 25 },
+          { texto: 'É maior que 10.', teste: (n) => n > 10 },
+          { texto: 'É menor que 20.', teste: (n) => n < 20 },
           { texto: 'É divisor de 36.', teste: divisor(36) },
         ],
       },
@@ -131,17 +143,18 @@ const FASES = [
         resposta: 10,
         pistas: [
           {
-            texto: 'Ele está no domínio de f(x) = √(12 − x).',
-            dica: 'Não existe raiz quadrada de número negativo.',
-            explica: '12 − x não pode ser negativo, então x ≤ 12.',
+            texto: 'Pode entrar em f(x) = √(x − 8).',
+            formula: raiz('<i>x</i> − 8'),
+            dica: 'Não existe raiz de número negativo. Então x − 8 tem que dar 0 ou mais.',
+            explica: 'x − 8 ≥ 0, então x ≥ 8.',
             dominio: true,
-            teste: (n) => 12 - n >= 0,
+            teste: (n) => n - 8 >= 0,
           },
           { texto: 'É par.', teste: par },
-          { texto: 'É maior que 7.', teste: (n) => n > 7 },
-          { texto: 'Não é múltiplo de 4.', teste: (n) => n % 4 !== 0 },
-          { texto: 'Tem dois algarismos.', teste: (n) => n >= 10 },
           { texto: 'É divisor de 30.', teste: divisor(30) },
+          { texto: 'Não é múltiplo de 4.', teste: (n) => n % 4 !== 0 },
+          { texto: 'É menor que 15.', teste: (n) => n < 15 },
+          { texto: 'Não é múltiplo de 3.', teste: (n) => n % 3 !== 0 },
         ],
       },
     ],

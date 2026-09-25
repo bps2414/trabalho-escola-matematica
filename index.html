@@ -7,123 +7,201 @@
   <title>O Cofre</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&family=STIX+Two+Text:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <button class="mudo" id="mudo" type="button" aria-pressed="false" aria-label="Desligar som">🔊</button>
+  <!-- Definições compartilhadas pelos desenhos do cofre -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="g-porta" cx="38%" cy="32%" r="78%">
+        <stop offset="0" stop-color="#56616F"/>
+        <stop offset=".6" stop-color="#2E3640"/>
+        <stop offset="1" stop-color="#1A1F25"/>
+      </radialGradient>
+      <linearGradient id="g-moldura" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3B444F"/>
+        <stop offset=".5" stop-color="#262D35"/>
+        <stop offset="1" stop-color="#1B2027"/>
+      </linearGradient>
+      <radialGradient id="g-metal" cx="35%" cy="30%" r="80%">
+        <stop offset="0" class="m-claro"/>
+        <stop offset=".55" class="m-base"/>
+        <stop offset="1" class="m-escuro"/>
+      </radialGradient>
+      <linearGradient id="g-barra" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFE9A8"/>
+        <stop offset=".45" stop-color="#E7B647"/>
+        <stop offset="1" stop-color="#9C6F16"/>
+      </linearGradient>
+      <radialGradient id="g-fundo-cofre" cx="50%" cy="62%" r="60%">
+        <stop offset="0" stop-color="#3A2A0C"/>
+        <stop offset="1" stop-color="#07090B"/>
+      </radialGradient>
+      <radialGradient id="g-brilho" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#FFF3C4" stop-opacity=".95"/>
+        <stop offset=".4" stop-color="#F0C75E" stop-opacity=".55"/>
+        <stop offset="1" stop-color="#F0C75E" stop-opacity="0"/>
+      </radialGradient>
+      <clipPath id="c-abertura"><circle cx="120" cy="120" r="97"/></clipPath>
+    </defs>
+  </svg>
+
+  <div class="sirene" id="sirene" aria-hidden="true"></div>
   <div class="flash" id="flash" aria-hidden="true"></div>
 
-  <main class="app">
-    <!-- Início -->
-    <section class="tela ativa" data-tela="inicio">
-      <h1 class="titulo-jogo">O Cofre</h1>
-      <div class="cofre-palco" data-cofre></div>
-      <p class="lead">Cada um recebe pistas secretas. Juntem tudo e descubram a senha antes do alarme.</p>
-      <button class="btn btn-latao" type="button" data-ir="como">Começar</button>
-      <p class="rodape">Trabalho de Matemática · 1º ano</p>
-    </section>
-
-    <!-- Como jogar -->
-    <section class="tela" data-tela="como">
-      <p class="sobrancelha">Como jogar</p>
-      <ol class="passos">
-        <li>
-          <h2>Veja suas pistas escondido</h2>
-          <p>Passe o celular. Cada um segura o botão para ver só as próprias pistas.</p>
-        </li>
-        <li>
-          <h2>Fale, não mostre</h2>
-          <p>Contem as pistas em voz alta e risquem os números que não servem.</p>
-        </li>
-        <li>
-          <h2>Abra o cofre</h2>
-          <p>Vocês têm 2 minutos e 3 tentativas para digitar a senha.</p>
-        </li>
-      </ol>
-      <button class="btn btn-latao" type="button" data-ir="jogadores">Entendi</button>
-    </section>
-
-    <!-- Quantos jogadores -->
-    <section class="tela" data-tela="jogadores">
-      <p class="sobrancelha">Antes de começar</p>
-      <h2 class="titulo">Quantos vão jogar?</h2>
-      <div class="escolha-jogadores" role="radiogroup" aria-label="Número de jogadores">
-        <button type="button" role="radio" aria-checked="false" data-jogadores="3">3</button>
-        <button type="button" role="radio" aria-checked="true" data-jogadores="4">4</button>
-        <button type="button" role="radio" aria-checked="false" data-jogadores="5">5</button>
-        <button type="button" role="radio" aria-checked="false" data-jogadores="6">6</button>
+  <div class="app">
+    <header class="topo">
+      <span class="marca">O Cofre</span>
+      <div class="topo-acoes">
+        <button class="icone" id="btn-regras" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>
+          <span>Regras</span>
+        </button>
+        <button class="icone icone-redondo" id="mudo" type="button" aria-pressed="false" aria-label="Desligar som">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9h4l5-4v14l-5-4H4z"/>
+            <path class="onda" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>
+            <path class="corte" d="M16 9l6 6M22 9l-6 6"/>
+          </svg>
+        </button>
       </div>
-      <p class="apoio">Cada fase tem 6 pistas, divididas entre vocês.</p>
-      <button class="btn btn-latao" type="button" id="btn-iniciar">Começar fase 1</button>
-    </section>
+    </header>
 
-    <!-- Abertura da fase -->
-    <section class="tela" data-tela="fase">
-      <p class="sobrancelha" id="fase-num"></p>
-      <h2 class="titulo-fase" id="fase-nome"></h2>
-      <p class="lead" id="fase-faixa"></p>
-      <p class="apoio" id="fase-extra"></p>
-      <button class="btn btn-latao" type="button" id="btn-distribuir">Distribuir pistas</button>
-    </section>
+    <main class="telas">
+      <!-- Início -->
+      <section class="tela ativa" data-tela="inicio">
+        <h1 class="titulo-jogo">O Cofre</h1>
+        <div class="cofre-palco" data-cofre></div>
+        <p class="lead">Cada um recebe pistas secretas. Juntem tudo e descubram a senha antes do alarme.</p>
+        <button class="btn btn-latao" type="button" data-ir="como">Começar</button>
+        <p class="rodape">Trabalho de Matemática · 1º ano</p>
+      </section>
 
-    <!-- Passe o celular -->
-    <section class="tela" data-tela="passe">
-      <p class="sobrancelha" id="passe-fase"></p>
-      <p class="vez">Vez do</p>
-      <h2 class="jogador" id="passe-jogador"></h2>
-      <p class="apoio" id="passe-aviso"></p>
-      <div class="fichas" id="passe-fichas" aria-live="polite"></div>
-      <button class="segurar" type="button" id="passe-segurar">Segure para ver</button>
-      <button class="btn btn-latao" type="button" id="btn-passar" disabled></button>
-    </section>
+      <!-- Como jogar -->
+      <section class="tela" data-tela="como">
+        <p class="sobrancelha">Como jogar</p>
+        <ol class="passos">
+          <li>
+            <h2>Veja suas pistas escondido</h2>
+            <p>Passe o celular. Cada um segura o botão para ver só as próprias pistas.</p>
+          </li>
+          <li>
+            <h2>Fale, não mostre</h2>
+            <p>Contem as pistas em voz alta e risquem os números que não servem.</p>
+          </li>
+          <li>
+            <h2>Abra o cofre</h2>
+            <p>Vocês têm 2 minutos e 3 tentativas para digitar a senha.</p>
+          </li>
+        </ol>
+        <button class="btn btn-latao" type="button" data-ir="jogadores">Entendi</button>
+      </section>
 
-    <!-- Discussão -->
-    <section class="tela tela-discussao" data-tela="discussao">
-      <header class="painel">
+      <!-- Quantos jogadores -->
+      <section class="tela" data-tela="jogadores">
+        <p class="sobrancelha">Antes de começar</p>
+        <h2 class="titulo">Quantos vão jogar?</h2>
+        <div class="escolha-jogadores" role="radiogroup" aria-label="Número de jogadores">
+          <button type="button" role="radio" aria-checked="false" data-jogadores="3">3</button>
+          <button type="button" role="radio" aria-checked="true" data-jogadores="4">4</button>
+          <button type="button" role="radio" aria-checked="false" data-jogadores="5">5</button>
+          <button type="button" role="radio" aria-checked="false" data-jogadores="6">6</button>
+        </div>
+        <p class="apoio">Cada fase tem 6 pistas, divididas entre vocês.</p>
+        <button class="btn btn-latao" type="button" id="btn-iniciar">Começar fase 1</button>
+      </section>
+
+      <!-- Abertura da fase -->
+      <section class="tela" data-tela="fase">
+        <div class="medalhao" aria-hidden="true"><span id="fase-numero"></span></div>
+        <p class="sobrancelha" id="fase-num"></p>
+        <h2 class="titulo-fase" id="fase-nome"></h2>
+        <p class="lead" id="fase-faixa"></p>
+        <p class="apoio" id="fase-tema"></p>
+        <div class="dominio-card" id="fase-dominio" hidden>
+          <p class="dominio-o-que"><strong>Domínio</strong> são os números que podem entrar na função sem dar erro.</p>
+          <div class="dominio-exemplos">
+            <div class="dominio-exemplo">
+              <div class="formula formula-mini"><span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro"><i>x</i> − 3</span></span></div>
+              <p>Dentro da raiz não pode ficar negativo.</p>
+              <strong>x ≥ 3</strong>
+            </div>
+            <div class="dominio-exemplo">
+              <div class="formula formula-mini"><span class="frac"><span>1</span><span><i>x</i> − 5</span></span></div>
+              <p>Embaixo da fração não pode dar zero.</p>
+              <strong>x ≠ 5</strong>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-latao" type="button" id="btn-distribuir">Distribuir pistas</button>
+      </section>
+
+      <!-- Passe o celular -->
+      <section class="tela" data-tela="passe">
+        <p class="sobrancelha" id="passe-fase"></p>
         <div>
-          <span class="rotulo">Tempo</span>
-          <span class="relogio" id="relogio" role="timer">2:00</span>
+          <p class="vez">Vez do</p>
+          <h2 class="jogador" id="passe-jogador"></h2>
         </div>
-        <div class="painel-direita">
-          <span class="rotulo">Tentativas</span>
-          <span class="lampadas" id="lampadas" aria-label="3 tentativas"></span>
+        <p class="apoio" id="passe-aviso"></p>
+        <div class="fichas" id="passe-fichas" aria-live="polite"></div>
+        <button class="segurar" type="button" id="passe-segurar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+          <span>Segure para ver</span>
+        </button>
+        <button class="btn btn-latao" type="button" id="btn-passar" disabled></button>
+      </section>
+
+      <!-- Discussão -->
+      <section class="tela tela-discussao" data-tela="discussao">
+        <header class="painel">
+          <div>
+            <span class="rotulo">Tempo</span>
+            <span class="relogio" id="relogio" role="timer">2:00</span>
+          </div>
+          <div class="painel-direita">
+            <span class="rotulo">Tentativas</span>
+            <span class="lampadas" id="lampadas" aria-label="3 tentativas"></span>
+          </div>
+          <div class="barra-tempo" aria-hidden="true"><span id="barra-tempo"></span></div>
+        </header>
+        <p class="apoio" id="discussao-faixa"></p>
+        <div class="quadro" id="quadro"></div>
+        <div class="acoes">
+          <button class="btn btn-aco" type="button" id="btn-rever">Rever pista</button>
+          <button class="btn btn-latao" type="button" id="btn-senha">Digitar senha</button>
         </div>
-      </header>
-      <p class="apoio" id="discussao-faixa"></p>
-      <div class="quadro" id="quadro"></div>
-      <div class="acoes">
-        <button class="btn btn-aco" type="button" id="btn-rever">Rever pista</button>
-        <button class="btn btn-latao" type="button" id="btn-senha">Digitar senha</button>
-      </div>
-    </section>
+      </section>
 
-    <!-- Resultado da fase -->
-    <section class="tela" data-tela="resultado">
-      <div class="cofre-palco" data-cofre id="resultado-cofre"></div>
-      <h2 class="titulo-resultado" id="resultado-titulo"></h2>
-      <p class="lead" id="resultado-motivo"></p>
-      <div class="explicacao">
-        <p class="rotulo">Como as pistas levavam até a senha</p>
-        <ol id="resultado-pistas"></ol>
-      </div>
-      <button class="btn btn-latao" type="button" id="btn-proxima"></button>
-    </section>
+      <!-- Resultado da fase -->
+      <section class="tela" data-tela="resultado">
+        <div class="cofre-palco" data-cofre id="resultado-cofre"></div>
+        <h2 class="titulo-resultado" id="resultado-titulo"></h2>
+        <p class="lead" id="resultado-motivo"></p>
+        <div class="explicacao">
+          <p class="rotulo">Como as pistas levavam até a senha</p>
+          <ol id="resultado-pistas"></ol>
+        </div>
+        <button class="btn btn-latao" type="button" id="btn-proxima"></button>
+      </section>
 
-    <!-- Placar final -->
-    <section class="tela" data-tela="placar">
-      <p class="sobrancelha">Fim de jogo</p>
-      <h2 class="placar" id="placar-numero"></h2>
-      <p class="lead" id="placar-texto"></p>
-      <button class="btn btn-latao" type="button" data-ir="jogadores">Jogar de novo</button>
-    </section>
-  </main>
+      <!-- Placar final -->
+      <section class="tela" data-tela="placar">
+        <p class="sobrancelha">Fim de jogo</p>
+        <h2 class="placar" id="placar-numero"></h2>
+        <div class="medalhas" id="medalhas"></div>
+        <p class="lead" id="placar-texto"></p>
+        <button class="btn btn-latao" type="button" data-ir="jogadores">Jogar de novo</button>
+      </section>
+    </main>
+  </div>
 
   <!-- Teclado da senha -->
   <div class="folha" id="folha-senha" hidden>
     <div class="folha-corpo" role="dialog" aria-modal="true" aria-labelledby="senha-titulo">
       <h2 class="folha-titulo" id="senha-titulo">Digite a senha</h2>
-      <output class="visor" id="visor" aria-live="assertive">– –</output>
+      <output class="visor" id="visor" aria-live="assertive"></output>
       <p class="mensagem" id="senha-msg" aria-live="assertive"></p>
       <div class="teclado" id="teclado">
         <button type="button" data-tecla="1">1</button>
@@ -149,48 +227,154 @@
       <h2 class="folha-titulo" id="rever-titulo">Quem quer rever?</h2>
       <div class="chips" id="rever-chips"></div>
       <div class="fichas" id="rever-fichas" aria-live="polite"></div>
-      <button class="segurar" type="button" id="rever-segurar" disabled>Segure para ver</button>
+      <button class="segurar segurar-menor" type="button" id="rever-segurar" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+        <span>Segure para ver</span>
+      </button>
       <button class="btn btn-aco" type="button" id="btn-rever-fechar">Voltar para a discussão</button>
+    </div>
+  </div>
+
+  <!-- Regras completas -->
+  <div class="folha" id="folha-regras" hidden>
+    <div class="folha-corpo folha-regras" role="dialog" aria-modal="true" aria-labelledby="regras-titulo">
+      <h2 class="folha-titulo" id="regras-titulo">Regras do Cofre</h2>
+      <div class="regras">
+        <section>
+          <h3>Objetivo</h3>
+          <p>Descobrir o número secreto de cada cofre. São 3 cofres: bronze, prata e ouro.</p>
+        </section>
+        <section>
+          <h3>Uma fase, passo a passo</h3>
+          <ol>
+            <li>Passem o celular. Cada jogador <strong>segura o botão</strong> para ver as próprias pistas. Soltou, elas somem.</li>
+            <li>Todo mundo viu? Começa a discussão: falem as pistas em voz alta e <strong>risquem no quadro</strong> os números que não servem.</li>
+            <li>Quando tiverem certeza, toquem em <strong>Digitar senha</strong>.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Pode e não pode</h3>
+          <ul>
+            <li><strong>Não mostre</strong> sua tela. Fale a pista com suas palavras.</li>
+            <li>Esqueceu sua pista? Use <strong>Rever pista</strong>.</li>
+            <li>As 6 pistas de cada fase são divididas entre vocês. Com 3 jogadores, cada um fica com 2.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Tempo e tentativas</h3>
+          <p>Cada fase tem <strong>2 minutos</strong> e <strong>3 tentativas</strong>. Se o tempo ou as tentativas acabarem, o alarme dispara, o jogo mostra a resposta e segue para o próximo cofre.</p>
+        </section>
+        <section>
+          <h3>Os cofres</h3>
+          <ul class="lista-cofres">
+            <li><span class="ponto ponto-bronze"></span><strong>Bronze</strong> · 1 a 20 · par, ímpar, maior e menor</li>
+            <li><span class="ponto ponto-prata"></span><strong>Prata</strong> · 1 a 50 · múltiplos e divisores</li>
+            <li><span class="ponto ponto-ouro"></span><strong>Ouro</strong> · 1 a 30 · uma pista de domínio</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Domínio de função</h3>
+          <p>São os números que podem entrar na função sem dar erro.</p>
+          <div class="dominio-exemplos">
+            <div class="dominio-exemplo">
+              <div class="formula formula-mini"><span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro"><i>x</i> − 3</span></span></div>
+              <p>Dentro da raiz não pode ficar negativo.</p>
+              <strong>x ≥ 3</strong>
+            </div>
+            <div class="dominio-exemplo">
+              <div class="formula formula-mini"><span class="frac"><span>1</span><span><i>x</i> − 5</span></span></div>
+              <p>Embaixo da fração não pode dar zero.</p>
+              <strong>x ≠ 5</strong>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Placar</h3>
+          <p>No fim aparece quantos cofres vocês abriram.</p>
+        </section>
+      </div>
+      <button class="btn btn-latao" type="button" id="btn-regras-fechar">Fechar regras</button>
     </div>
   </div>
 
   <template id="tpl-cofre">
     <div class="cofre">
-      <div class="interior" aria-hidden="true"></div>
-      <svg class="porta" viewBox="0 0 200 200" role="img" aria-label="Porta do cofre">
-        <defs>
-          <radialGradient id="g-porta" cx="40%" cy="35%" r="75%">
-            <stop offset="0" stop-color="#4A5563"/>
-            <stop offset="1" stop-color="#1E242B"/>
-          </radialGradient>
-          <radialGradient id="g-latao" cx="35%" cy="30%" r="80%">
-            <stop offset="0" stop-color="#F0CF7E"/>
-            <stop offset=".55" stop-color="#CFA24B"/>
-            <stop offset="1" stop-color="#7A5C22"/>
-          </radialGradient>
-        </defs>
-        <circle cx="100" cy="100" r="96" fill="#0C0F13"/>
-        <circle cx="100" cy="100" r="90" fill="url(#g-porta)" stroke="#5B6673" stroke-width="2"/>
-        <g class="parafusos" fill="#8E99A5">
-          <circle cx="100" cy="20" r="4"/><circle cx="156.6" cy="43.4" r="4"/>
-          <circle cx="180" cy="100" r="4"/><circle cx="156.6" cy="156.6" r="4"/>
-          <circle cx="100" cy="180" r="4"/><circle cx="43.4" cy="156.6" r="4"/>
-          <circle cx="20" cy="100" r="4"/><circle cx="43.4" cy="43.4" r="4"/>
+      <span class="giroflex" aria-hidden="true"></span>
+      <!-- Moldura e o que tem dentro -->
+      <svg class="cofre-fundo" viewBox="0 0 240 240" aria-hidden="true">
+        <rect x="4" y="4" width="232" height="232" rx="22" fill="url(#g-moldura)" stroke="#56616E" stroke-width="2"/>
+        <g fill="#6F7B88">
+          <circle cx="20" cy="20" r="4"/><circle cx="220" cy="20" r="4"/>
+          <circle cx="20" cy="220" r="4"/><circle cx="220" cy="220" r="4"/>
         </g>
-        <circle cx="100" cy="100" r="62" fill="none" stroke="#12161B" stroke-width="6"/>
-        <polygon points="100,33 94,23 106,23" fill="#CFA24B"/>
-        <g class="disco">
-          <circle cx="100" cy="100" r="54" fill="url(#g-latao)"/>
-          <circle cx="100" cy="100" r="54" fill="none" stroke="#5E4618" stroke-width="10" stroke-dasharray="1.2 4.45" opacity=".75"/>
-          <circle cx="100" cy="100" r="36" fill="#12161B" opacity=".85"/>
-          <g stroke="#CFA24B" stroke-width="7" stroke-linecap="round">
-            <line x1="100" y1="100" x2="100" y2="70"/>
-            <line x1="100" y1="100" x2="126" y2="115"/>
-            <line x1="100" y1="100" x2="74" y2="115"/>
+        <circle cx="120" cy="120" r="103" fill="#050709" stroke="#0B0E12" stroke-width="4"/>
+        <g clip-path="url(#c-abertura)">
+          <rect x="20" y="20" width="200" height="200" fill="url(#g-fundo-cofre)"/>
+          <g class="raios" fill="#FFE39A">
+            <polygon points="120,140 108,20 132,20"/><polygon points="120,140 200,40 212,58"/>
+            <polygon points="120,140 230,130 230,152"/><polygon points="120,140 40,40 28,58"/>
+            <polygon points="120,140 10,130 10,152"/><polygon points="120,140 205,230 185,236"/>
+            <polygon points="120,140 35,230 55,236"/>
           </g>
-          <circle cx="100" cy="100" r="9" fill="url(#g-latao)"/>
+          <circle class="brilho" cx="120" cy="140" r="90" fill="url(#g-brilho)"/>
+          <rect x="20" y="182" width="200" height="6" fill="#1A140A"/>
+          <rect x="20" y="188" width="200" height="40" fill="#0D0B07"/>
+          <g class="barras">
+            <path d="M66 182l4-18h30l4 18z"/><path d="M103 182l4-18h30l4 18z"/><path d="M140 182l4-18h30l4 18z"/>
+            <path d="M84 164l4-18h30l4 18z"/><path d="M121 164l4-18h30l4 18z"/>
+            <path d="M103 146l4-18h30l4 18z"/>
+          </g>
+          <g class="reflexos" fill="#FFF6D6" opacity=".7">
+            <rect x="73" y="167" width="12" height="2" rx="1"/><rect x="110" y="167" width="12" height="2" rx="1"/>
+            <rect x="147" y="167" width="12" height="2" rx="1"/><rect x="91" y="149" width="12" height="2" rx="1"/>
+            <rect x="128" y="149" width="12" height="2" rx="1"/><rect x="110" y="131" width="12" height="2" rx="1"/>
+          </g>
+          <g fill="#E7B647" stroke="#9C6F16" stroke-width="1.5">
+            <ellipse cx="50" cy="180" rx="9" ry="3.5"/><ellipse cx="52" cy="176" rx="9" ry="3.5"/>
+            <ellipse cx="190" cy="180" rx="9" ry="3.5"/>
+          </g>
+        </g>
+        <g fill="#1B2027" stroke="#56616E" stroke-width="1.5">
+          <rect x="6" y="70" width="20" height="30" rx="5"/><rect x="6" y="140" width="20" height="30" rx="5"/>
         </g>
       </svg>
+      <!-- Porta -->
+      <svg class="porta" viewBox="0 0 240 240" role="img" aria-label="Porta do cofre">
+        <g class="trincos" fill="#8D98A4" stroke="#3A434E" stroke-width="1.5">
+          <g transform="rotate(0 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(45 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(90 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(135 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(180 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(225 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(270 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+          <g transform="rotate(315 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
+        </g>
+        <circle cx="120" cy="120" r="97" fill="url(#g-porta)" stroke="#75818F" stroke-width="3"/>
+        <circle cx="120" cy="120" r="86" fill="none" stroke="#12161B" stroke-width="5"/>
+        <circle cx="120" cy="120" r="80" fill="none" stroke="#FFFFFF" stroke-opacity=".06" stroke-width="2"/>
+        <g fill="#6F7B88">
+          <circle cx="120" cy="40" r="3"/><circle cx="176.6" cy="63.4" r="3"/><circle cx="200" cy="120" r="3"/>
+          <circle cx="176.6" cy="176.6" r="3"/><circle cx="120" cy="200" r="3"/><circle cx="63.4" cy="176.6" r="3"/>
+          <circle cx="40" cy="120" r="3"/><circle cx="63.4" cy="63.4" r="3"/>
+        </g>
+        <polygon points="120,62 113,50 127,50" class="ponteiro"/>
+        <g class="disco">
+          <circle cx="120" cy="120" r="54" fill="url(#g-metal)"/>
+          <circle cx="120" cy="120" r="54" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="10" stroke-dasharray="1.2 4.45"/>
+          <circle cx="120" cy="120" r="37" fill="#12161B" opacity=".88"/>
+          <g class="raio-disco" stroke-width="7" stroke-linecap="round">
+            <line x1="120" y1="120" x2="120" y2="89"/>
+            <line x1="120" y1="120" x2="147" y2="135.5"/>
+            <line x1="120" y1="120" x2="93" y2="135.5"/>
+          </g>
+          <circle cx="120" cy="89" r="5.5" fill="url(#g-metal)"/>
+          <circle cx="147" cy="135.5" r="5.5" fill="url(#g-metal)"/>
+          <circle cx="93" cy="135.5" r="5.5" fill="url(#g-metal)"/>
+          <circle cx="120" cy="120" r="10" fill="url(#g-metal)"/>
+        </g>
+      </svg>
+      <div class="particulas" aria-hidden="true"></div>
     </div>
   </template>
 

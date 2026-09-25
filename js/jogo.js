@@ -8,7 +8,7 @@
   const estado = {
     jogadores: 4,
     fase: 0,
-    abertos: 0,
+    resultados: [],
     enigma: null,
     pistasDe: [],
     vez: 0,
@@ -44,20 +44,22 @@
       if (audio.state === 'suspended') audio.resume();
       const t = audio.currentTime;
       if (tipo === 'tecla') tom(620, t, 0.04, 'triangle', 0.1);
+      if (tipo === 'papel') tom(900, t, 0.05, 'triangle', 0.05);
       if (tipo === 'tique') tom(1100, t, 0.03, 'square', 0.06);
       if (tipo === 'erro') {
         tom(330, t, 0.18, 'sawtooth', 0.09);
         tom(240, t + 0.2, 0.3, 'sawtooth', 0.09);
       }
       if (tipo === 'alarme') {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
           const osc = tom(500, t + i * 0.5, 0.48, 'sawtooth', 0.08);
           osc.frequency.linearRampToValueAtTime(950, t + i * 0.5 + 0.45);
         }
       }
       if (tipo === 'abrir') {
-        [0, 0.12, 0.24].forEach((d) => tom(1400, t + d, 0.03, 'square', 0.08));
-        [523, 659, 784, 1047].forEach((f, i) => tom(f, t + 0.45 + i * 0.09, 0.9, 'sine', 0.07));
+        for (let i = 0; i < 8; i++) tom(1500 - i * 60, t + i * 0.08, 0.025, 'square', 0.06); // disco girando
+        [0.8, 0.9].forEach((d) => tom(180, t + d, 0.12, 'square', 0.12)); // trincos
+        [523, 659, 784, 1047, 1319].forEach((f, i) => tom(f, t + 1.2 + i * 0.1, 1.1, 'sine', 0.07));
       }
     } catch (e) { /* navegador sem áudio */ }
   }
@@ -68,7 +70,6 @@
 
   function atualizarMudo() {
     const botao = $('#mudo');
-    botao.textContent = mudo ? '🔇' : '🔊';
     botao.setAttribute('aria-pressed', String(mudo));
     botao.setAttribute('aria-label', mudo ? 'Ligar som' : 'Desligar som');
   }
@@ -93,23 +94,46 @@
   // ---------- Navegação ----------
   function mostrar(nome) {
     $$('.tela').forEach((t) => t.classList.toggle('ativa', t.dataset.tela === nome));
+    document.body.dataset.telaAtual = nome;
     window.scrollTo(0, 0);
   }
+  document.body.dataset.telaAtual = 'inicio';
 
-  $$('[data-ir]').forEach((b) => b.addEventListener('click', () => mostrar(b.dataset.ir)));
+  $$('[data-ir]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.ir === 'jogadores') delete document.body.dataset.metal;
+    mostrar(b.dataset.ir);
+  }));
 
   // A porta do cofre é a mesma em todas as telas.
   $$('[data-cofre]').forEach((palco) => palco.appendChild($('#tpl-cofre').content.cloneNode(true)));
+
+  // ---------- Folhas ----------
+  function abrirFolha(id) { $(id).hidden = false; }
+  function fecharFolha(id) { $(id).hidden = true; }
+
+  $('#btn-regras').addEventListener('click', () => {
+    abrirFolha('#folha-regras');
+    $('#folha-regras .regras').scrollTop = 0;
+  });
+  $('#btn-regras-fechar').addEventListener('click', () => fecharFolha('#folha-regras'));
+
+  $$('.folha').forEach((folha) => folha.addEventListener('click', (e) => {
+    if (e.target === folha) folha.hidden = true; // toque fora fecha
+  }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') $$('.folha').forEach((f) => { f.hidden = true; });
+  });
 
   // ---------- Jogadores ----------
   $$('[data-jogadores]').forEach((b) => b.addEventListener('click', () => {
     estado.jogadores = Number(b.dataset.jogadores);
     $$('[data-jogadores]').forEach((o) => o.setAttribute('aria-checked', String(o === b)));
+    som('tecla');
   }));
 
   $('#btn-iniciar').addEventListener('click', () => {
     estado.fase = 0;
-    estado.abertos = 0;
+    estado.resultados = [];
     abrirFase();
   });
 
@@ -129,29 +153,44 @@
     const pistas = embaralhar(estado.enigma.pistas);
     estado.pistasDe = Array.from({ length: estado.jogadores }, (_, j) => pistas.filter((_, i) => i % estado.jogadores === j));
 
+    document.body.dataset.metal = fase.metal;
+    $('#fase-numero').textContent = estado.fase + 1;
     $('#fase-num').textContent = `Fase ${estado.fase + 1} de ${FASES.length}`;
     $('#fase-nome').textContent = fase.nome;
     $('#fase-faixa').textContent = `A senha é um número de ${fase.min} a ${fase.max}.`;
-    $('#fase-extra').textContent = estado.enigma.pistas.some((p) => p.dominio)
-      ? 'Uma das pistas fala de domínio de função.'
-      : '';
+    $('#fase-tema').textContent = fase.tema;
+    $('#fase-dominio').hidden = !estado.enigma.pistas.some((p) => p.dominio);
     mostrar('fase');
   }
 
   $('#btn-distribuir').addEventListener('click', () => mostrarVez(0));
 
-  // ---------- Ver pistas segurando o botão ----------
-  function fichasHTML(pistas) {
-    return pistas.map((p) => `
-      <div class="ficha">
+  // ---------- Pistas ----------
+  function fichaHTML(p) {
+    if (p.dominio) {
+      return `
+        <div class="ficha ficha-dominio" data-pista="${p.texto}">
+          <span class="rotulo">Pista de domínio</span>
+          <p class="ficha-texto">O número secreto pode entrar nesta função sem dar erro:</p>
+          <div class="formula">${p.formula}</div>
+          <p class="ficha-dica"><strong>Dica:</strong> ${p.dica}</p>
+        </div>`;
+    }
+    return `
+      <div class="ficha" data-pista="${p.texto}">
         <span class="rotulo">Pista</span>
         <p class="ficha-texto">${p.texto}</p>
-        ${p.dica ? `<p class="ficha-dica"><strong>Dica:</strong> ${p.dica}</p>` : ''}
-      </div>`).join('');
+      </div>`;
   }
 
-  function fichasVazias(alvo, texto) {
-    alvo.innerHTML = `<div class="fichas-vazio">${texto}</div>`;
+  function mostrarFichas(alvo, pistas) {
+    alvo.innerHTML = pistas.map(fichaHTML).join('');
+    som('papel');
+  }
+
+  function esconderFichas(alvo, qtd, aviso) {
+    const ocultas = Array.from({ length: qtd }, () => '<div class="ficha-oculta"><span></span><span></span></div>').join('');
+    alvo.innerHTML = `${ocultas}<p class="fichas-aviso">${aviso}</p>`;
   }
 
   function ligarSegurar(botao, aoMostrar, aoEsconder) {
@@ -161,6 +200,7 @@
       if (e.type === 'pointerdown') botao.setPointerCapture(e.pointerId);
       segurando = true;
       botao.classList.add('pressionado');
+      vibrar(15);
       aoMostrar();
     };
     const esconder = () => {
@@ -182,7 +222,7 @@
   }
 
   // ---------- Passe o celular ----------
-  const AVISO_PASSE = 'Suas pistas aparecem aqui enquanto você segura o botão.';
+  const AVISO_PASSE = 'Segure o botão para ler. Soltou, elas somem.';
 
   function mostrarVez(i) {
     estado.vez = i;
@@ -191,7 +231,7 @@
     $('#passe-fase').textContent = `Fase ${estado.fase + 1} · ${FASES[estado.fase].nome}`;
     $('#passe-jogador').textContent = `Jogador ${n}`;
     $('#passe-aviso').textContent = `Só o jogador ${n} olha a tela. Você tem ${qtd} ${qtd === 1 ? 'pista' : 'pistas'}.`;
-    fichasVazias($('#passe-fichas'), AVISO_PASSE);
+    esconderFichas($('#passe-fichas'), qtd, AVISO_PASSE);
     const passar = $('#btn-passar');
     passar.disabled = true;
     passar.textContent = i < estado.jogadores - 1 ? `Passar para o jogador ${n + 1}` : 'Todos viram: começar';
@@ -200,9 +240,9 @@
 
   ligarSegurar(
     $('#passe-segurar'),
-    () => { $('#passe-fichas').innerHTML = fichasHTML(estado.pistasDe[estado.vez]); },
+    () => mostrarFichas($('#passe-fichas'), estado.pistasDe[estado.vez]),
     () => {
-      fichasVazias($('#passe-fichas'), AVISO_PASSE);
+      esconderFichas($('#passe-fichas'), estado.pistasDe[estado.vez].length, AVISO_PASSE);
       $('#btn-passar').disabled = false;
     },
   );
@@ -217,10 +257,12 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
 
-  function desenharLampadas() {
+  function desenharLampadas(queimou) {
     const el = $('#lampadas');
-    el.innerHTML = Array.from({ length: TENTATIVAS }, (_, i) =>
-      `<span class="lampada${i >= estado.tentativas ? ' gasta' : ''}"></span>`).join('');
+    el.innerHTML = Array.from({ length: TENTATIVAS }, (_, i) => {
+      const gasta = i >= estado.tentativas;
+      return `<span class="lampada${gasta ? ' gasta' : ''}${gasta && i === queimou ? ' queimou' : ''}"></span>`;
+    }).join('');
     el.setAttribute('aria-label', `${estado.tentativas} ${estado.tentativas === 1 ? 'tentativa' : 'tentativas'}`);
   }
 
@@ -238,6 +280,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = n;
+      b.style.setProperty('--i', n - fase.min);
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', () => {
         b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
@@ -260,9 +303,12 @@
     if (restante === estado.ultimoSegundo) return;
     estado.ultimoSegundo = restante;
     const rel = $('#relogio');
+    const urgente = restante <= 10;
     rel.textContent = formatarTempo(restante);
-    rel.classList.toggle('urgente', restante <= 10);
-    if (restante <= 10 && restante > 0) {
+    rel.classList.toggle('urgente', urgente);
+    $('.painel').classList.toggle('urgente', urgente);
+    $('#barra-tempo').style.transform = `scaleX(${restante / TEMPO_FASE})`;
+    if (urgente && restante > 0) {
       som('tique');
       vibrar(30);
     }
@@ -270,8 +316,13 @@
   }
 
   // ---------- Teclado da senha ----------
-  function atualizarVisor() {
-    $('#visor').textContent = estado.digitado ? estado.digitado.padEnd(2, '–') : '– –';
+  function atualizarVisor(novo) {
+    const casas = [0, 1].map((i) => {
+      const d = estado.digitado[i];
+      const classe = d === undefined ? 'digito vazio' : `digito${novo && i === estado.digitado.length - 1 ? ' novo' : ''}`;
+      return `<span class="${classe}">${d === undefined ? '0' : d}</span>`;
+    });
+    $('#visor').innerHTML = casas.join('');
     $('#btn-abrir').disabled = estado.digitado === '';
   }
 
@@ -280,7 +331,7 @@
     $('#senha-msg').textContent = '';
     $('#visor').classList.remove('errado');
     atualizarVisor();
-    $('#folha-senha').hidden = false;
+    abrirFolha('#folha-senha');
   });
 
   $('#teclado').addEventListener('click', (e) => {
@@ -290,10 +341,10 @@
     som('tecla');
     $('#senha-msg').textContent = '';
     $('#visor').classList.remove('errado');
-    if (v === 'voltar') { $('#folha-senha').hidden = true; return; }
+    if (v === 'voltar') { fecharFolha('#folha-senha'); return; }
     if (v === 'apagar') estado.digitado = estado.digitado.slice(0, -1);
     else if (estado.digitado.length < 2) estado.digitado = (estado.digitado + v).replace(/^0+(?=\d)/, '');
-    atualizarVisor();
+    atualizarVisor(v !== 'apagar');
   });
 
   $('#btn-abrir').addEventListener('click', () => {
@@ -302,7 +353,7 @@
       return;
     }
     estado.tentativas -= 1;
-    desenharLampadas();
+    desenharLampadas(estado.tentativas);
     if (estado.tentativas === 0) {
       terminarFase(false, 'As 3 tentativas acabaram.');
       return;
@@ -319,16 +370,16 @@
   });
 
   // ---------- Rever pista ----------
-  const AVISO_REVER = 'Escolha seu número e segure o botão.';
   let revendo = null;
+  const avisoRever = () => `Só o jogador ${revendo + 1} olha. Segure o botão.`;
 
   $('#btn-rever').addEventListener('click', () => {
     revendo = null;
     $('#rever-chips').innerHTML = estado.pistasDe.map((_, i) =>
       `<button type="button" aria-pressed="false" data-rever="${i}">Jogador ${i + 1}</button>`).join('');
-    fichasVazias($('#rever-fichas'), AVISO_REVER);
+    $('#rever-fichas').innerHTML = '<p class="fichas-aviso">Escolha seu número de jogador.</p>';
     $('#rever-segurar').disabled = true;
-    $('#folha-rever').hidden = false;
+    abrirFolha('#folha-rever');
   });
 
   $('#rever-chips').addEventListener('click', (e) => {
@@ -337,46 +388,79 @@
     revendo = Number(chip.dataset.rever);
     $$('#rever-chips button').forEach((b) => b.setAttribute('aria-pressed', String(b === chip)));
     $('#rever-segurar').disabled = false;
-    fichasVazias($('#rever-fichas'), `Só o jogador ${revendo + 1} olha. Segure o botão.`);
+    esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, avisoRever());
   });
 
   ligarSegurar(
     $('#rever-segurar'),
-    () => { $('#rever-fichas').innerHTML = fichasHTML(estado.pistasDe[revendo]); },
-    () => fichasVazias($('#rever-fichas'), `Só o jogador ${revendo + 1} olha. Segure o botão.`),
+    () => mostrarFichas($('#rever-fichas'), estado.pistasDe[revendo]),
+    () => esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, avisoRever()),
   );
 
-  $('#btn-rever-fechar').addEventListener('click', () => { $('#folha-rever').hidden = true; });
+  $('#btn-rever-fechar').addEventListener('click', () => fecharFolha('#folha-rever'));
 
   // ---------- Fim da fase ----------
   function explicarPistas(fase, enigma) {
+    const total = fase.max - fase.min + 1;
     let restantes = [];
     for (let n = fase.min; n <= fase.max; n++) restantes.push(n);
-    return enigma.pistas.map((p) => {
+    return enigma.pistas.map((p, i) => {
       const antes = restantes.length;
       restantes = restantes.filter((n) => p.teste(n));
       let sobra = restantes.length === 1 ? `sobra o ${restantes[0]}` : `sobram ${restantes.length}`;
       if (restantes.length === antes) sobra = 'confirma';
-      return `<li><span>${p.texto}</span><span class="sobra">${sobra}</span>${p.explica ? `<p class="porque">${p.explica}</p>` : ''}</li>`;
+      const de = `${(antes / total) * 100}%`;
+      const ate = `${(restantes.length / total) * 100}%`;
+      return `
+        <li style="--i:${i}">
+          <div class="linha-pista"><span>${p.texto}</span><span class="sobra${sobra === 'confirma' ? ' confirma' : ''}">${sobra}</span></div>
+          <div class="funil"><span style="--de:${de};--ate:${ate}"></span></div>
+          ${p.explica ? `<p class="porque">${p.explica}</p>` : ''}
+        </li>`;
     }).join('');
   }
+
+  function soltarMoedas(cofre) {
+    const tipos = ['', '', 'lingote', 'faisca', 'faisca'];
+    cofre.querySelector('.particulas').innerHTML = Array.from({ length: 34 }, (_, i) => {
+      const angulo = Math.random() * Math.PI * 2;
+      const dist = 90 + Math.random() * 130;
+      const dx = Math.round(Math.cos(angulo) * dist);
+      const dy = Math.round(Math.sin(angulo) * dist * 0.8 - 40);
+      const giro = Math.round(Math.random() * 720 - 360);
+      const atraso = (1.55 + Math.random() * 0.35).toFixed(2);
+      return `<span class="particula ${tipos[i % tipos.length]}" style="--dx:${dx}px;--dy:${dy}px;--giro:${giro}deg;--atraso:${atraso}s"></span>`;
+    }).join('');
+  }
+
+  function acender(el, classes) {
+    el.className = 'flash';
+    void el.offsetWidth;
+    el.classList.add(...classes);
+  }
+
+  let sireneTimer = null;
 
   function terminarFase(abriu, motivo) {
     clearInterval(estado.relogio);
     soltarTela();
-    $('#folha-senha').hidden = true;
-    $('#folha-rever').hidden = true;
+    $$('.folha').forEach((f) => { f.hidden = true; });
 
     const fase = FASES[estado.fase];
     const resposta = estado.enigma.resposta;
-    if (abriu) estado.abertos += 1;
+    estado.resultados[estado.fase] = abriu;
 
+    // Volta a porta para fechada sem animar, depois dispara a animação nova.
     const cofre = $('#resultado-cofre .cofre');
     cofre.classList.remove('aberto', 'trancado');
+    cofre.querySelector('.particulas').innerHTML = '';
+    cofre.querySelectorAll('.porta, .trinco, .brilho, .raios').forEach((el) => { el.style.transition = 'none'; });
     void cofre.offsetWidth;
-    cofre.classList.add(abriu ? 'aberto' : 'trancado');
+    cofre.querySelectorAll('.porta, .trinco, .brilho, .raios').forEach((el) => { el.style.transition = ''; });
 
-    $('#resultado-titulo').textContent = abriu ? 'Cofre aberto!' : 'Alarme disparado';
+    const titulo = $('#resultado-titulo');
+    titulo.textContent = abriu ? 'Cofre aberto!' : 'Alarme disparado';
+    titulo.className = `titulo-resultado ${abriu ? 'resultado-ok' : 'resultado-falhou'}`;
     $('#resultado-motivo').innerHTML = abriu
       ? `A senha era <span class="senha-era">${resposta}</span>.`
       : `${motivo} A senha era <span class="senha-era">${resposta}</span>.`;
@@ -385,18 +469,24 @@
     const ultima = estado.fase === FASES.length - 1;
     $('#btn-proxima').textContent = ultima ? 'Ver placar' : `Ir para a fase ${estado.fase + 2}`;
 
+    mostrar('resultado');
+    cofre.classList.add(abriu ? 'aberto' : 'trancado');
+
+    clearTimeout(sireneTimer);
+    const sirene = $('#sirene');
+    sirene.classList.remove('ligada');
     if (abriu) {
+      soltarMoedas(cofre);
+      acender($('#flash'), ['dourado', 'ligado']);
       som('abrir');
-      vibrar([40, 60, 40, 60, 200]);
+      vibrar([30, 50, 30, 50, 30, 400, 200]);
     } else {
+      acender($('#flash'), ['ligado']);
+      sirene.classList.add('ligada');
+      sireneTimer = setTimeout(() => sirene.classList.remove('ligada'), 2800);
       som('alarme');
       vibrar([300, 150, 300, 150, 300]);
-      const flash = $('#flash');
-      flash.classList.remove('ligado');
-      void flash.offsetWidth;
-      flash.classList.add('ligado');
     }
-    mostrar('resultado');
   }
 
   const FRASES_PLACAR = [
@@ -412,8 +502,14 @@
       abrirFase();
       return;
     }
-    $('#placar-numero').innerHTML = `${estado.abertos} de ${FASES.length}<small>cofres abertos</small>`;
-    $('#placar-texto').textContent = FRASES_PLACAR[estado.abertos];
+    const abertos = estado.resultados.filter(Boolean).length;
+    delete document.body.dataset.metal;
+    $('#placar-numero').innerHTML = `${abertos} de ${FASES.length}<small>cofres abertos</small>`;
+    $('#medalhas').innerHTML = FASES.map((f, i) => {
+      const ok = estado.resultados[i];
+      return `<span class="medalha medalha-${f.metal} ${ok ? 'aberta' : 'fechada'}" style="--i:${i}" title="${f.nome}: ${ok ? 'aberto' : 'alarme'}">${ok ? '✓' : '✕'}</span>`;
+    }).join('');
+    $('#placar-texto').textContent = FRASES_PLACAR[abertos];
     mostrar('placar');
   });
 })();

@@ -1,7 +1,8 @@
 // Joga uma partida completa com 3 jogadores num celular simulado:
+//  Início: abre e fecha as regras.
 //  Fase 1: erra uma vez e depois abre o cofre.
 //  Fase 2: revê uma pista e deixa o tempo acabar.
-//  Fase 3: confere a pista de domínio com dica e erra as 3 tentativas.
+//  Fase 3: confere a explicação de domínio, a fórmula e a dica, e erra as 3 tentativas.
 // Evidências (prints + vídeo) ficam em evidencias/.
 const { test, expect } = require('@playwright/test');
 const path = require('path');
@@ -11,10 +12,10 @@ const URL_JOGO = 'file://' + path.join(__dirname, '..', 'index.html');
 const JOGADORES = 3;
 
 let print = 0;
-async function registrar(page, nome) {
+async function registrar(page, nome, espera = 700) {
   const semRolagemLateral = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   expect(semRolagemLateral, `rolagem lateral em "${nome}"`).toBe(true);
-  await page.waitForTimeout(350); // espera as animações de entrada terminarem
+  await page.waitForTimeout(espera); // espera as animações de entrada terminarem
   print += 1;
   await page.screenshot({ path: path.join(PASTA, `${String(print).padStart(2, '0')}-${nome}.png`) });
 }
@@ -25,22 +26,27 @@ async function segurar(page, botao) {
   await page.mouse.down();
 }
 
+const pistasVisiveis = (page, alvo) =>
+  page.locator(`${alvo} .ficha[data-pista]`).evaluateAll((els) => els.map((e) => e.dataset.pista));
+
 // Passa o celular por todos os jogadores e devolve as pistas que cada um viu.
 async function distribuirPistas(page, printDoPrimeiro) {
   await page.getByRole('button', { name: 'Distribuir pistas' }).click();
   const pistasDe = [];
   for (let j = 1; j <= JOGADORES; j++) {
     await expect(page.locator('#passe-jogador')).toHaveText(`Jogador ${j}`);
-    await expect(page.locator('#passe-fichas .ficha')).toHaveCount(0);
+    await expect(page.locator('#passe-fichas .ficha[data-pista]')).toHaveCount(0);
+    await expect(page.locator('#passe-fichas .ficha-oculta')).toHaveCount(2);
     await expect(page.locator('#btn-passar')).toBeDisabled();
+    if (j === 1 && printDoPrimeiro) await registrar(page, `${printDoPrimeiro}-escondida`);
 
     await segurar(page, page.locator('#passe-segurar'));
-    await expect(page.locator('#passe-fichas .ficha').first()).toBeVisible();
-    if (j === 1 && printDoPrimeiro) await registrar(page, printDoPrimeiro);
-    pistasDe.push(await page.locator('#passe-fichas .ficha-texto').allTextContents());
+    await expect(page.locator('#passe-fichas .ficha[data-pista]').first()).toBeVisible();
+    if (j === 1 && printDoPrimeiro) await registrar(page, `${printDoPrimeiro}-visivel`, 400);
+    pistasDe.push(await pistasVisiveis(page, '#passe-fichas'));
     await page.mouse.up();
 
-    await expect(page.locator('#passe-fichas .ficha')).toHaveCount(0);
+    await expect(page.locator('#passe-fichas .ficha[data-pista]')).toHaveCount(0);
     await page.locator('#btn-passar').click();
   }
   await expect(page.locator('[data-tela="discussao"]')).toBeVisible();
@@ -60,8 +66,7 @@ function senhaDas(page, pistasDe) {
   }, pistasDe.flat());
 }
 
-async function digitar(page, numero) {
-  await page.getByRole('button', { name: 'Digitar senha' }).click();
+async function teclar(page, numero) {
   for (const d of String(numero)) await page.locator(`[data-tecla="${d}"]`).click();
   await page.getByRole('button', { name: 'Abrir o cofre' }).click();
 }
@@ -75,10 +80,19 @@ test('partida completa do Cofre', async ({ page }) => {
   await page.route(/fonts\.(googleapis|gstatic)\.com/, async (r) => r.fulfill({ response: await r.fetch() }));
   await page.clock.install();
   await page.goto(URL_JOGO);
-  await page.waitForTimeout(600);
-  await registrar(page, 'inicio');
+  await registrar(page, 'inicio', 1200);
 
-  await page.getByRole('button', { name: 'Começar' }).click();
+  // ---------- Regras ----------
+  await page.getByRole('button', { name: 'Regras' }).click();
+  const regras = page.getByRole('dialog', { name: 'Regras do Cofre' });
+  await expect(regras).toBeVisible();
+  await expect(regras).toContainText('Domínio de função');
+  await expect(regras).toContainText('3 tentativas');
+  await registrar(page, 'regras', 500);
+  await page.getByRole('button', { name: 'Fechar regras' }).click();
+  await expect(regras).toBeHidden();
+
+  await page.getByRole('button', { name: 'Começar', exact: true }).click();
   await registrar(page, 'como-jogar');
   await page.getByRole('button', { name: 'Entendi' }).click();
   await page.getByRole('radio', { name: String(JOGADORES) }).click();
@@ -87,8 +101,9 @@ test('partida completa do Cofre', async ({ page }) => {
 
   // ---------- Fase 1: erra uma vez, depois acerta ----------
   await expect(page.locator('#fase-nome')).toHaveText('Cofre de bronze');
-  await registrar(page, 'fase-1');
-  let pistas = await distribuirPistas(page, 'pista-escondida-visivel');
+  await expect(page.locator('#fase-dominio')).toBeHidden();
+  await registrar(page, 'fase-1', 1100);
+  let pistas = await distribuirPistas(page, 'pista');
   let { resposta, min } = await senhaDas(page, pistas);
 
   await expect(page.locator('#quadro button')).toHaveCount(20);
@@ -97,18 +112,19 @@ test('partida completa do Cofre', async ({ page }) => {
   await expect(page.locator('#quadro button[aria-pressed="true"]')).toHaveCount(2);
   await registrar(page, 'discussao');
 
-  await digitar(page, resposta === min ? min + 1 : min);
+  await page.getByRole('button', { name: 'Digitar senha' }).click();
+  await teclar(page, resposta === min ? min + 1 : min);
   await expect(page.locator('#senha-msg')).toContainText('ERRADO');
   await expect(page.locator('.lampada.gasta')).toHaveCount(1);
-  await registrar(page, 'senha-errada');
+  await registrar(page, 'senha-errada', 300);
 
-  for (const d of String(resposta)) await page.locator(`[data-tecla="${d}"]`).click();
-  await page.getByRole('button', { name: 'Abrir o cofre' }).click();
+  await teclar(page, resposta);
   await expect(page.locator('#resultado-titulo')).toHaveText('Cofre aberto!');
+  await expect(page.locator('#resultado-cofre .cofre')).toHaveClass(/aberto/);
   await expect(page.locator('#resultado-pistas li')).toHaveCount(6);
   await expect(page.locator('#resultado-pistas li', { hasText: `sobra o ${resposta}` })).toHaveCount(1);
-  await page.waitForTimeout(1800);
-  await registrar(page, 'cofre-aberto');
+  await registrar(page, 'cofre-abrindo', 1500);
+  await registrar(page, 'cofre-aberto', 2600);
   await page.getByRole('button', { name: 'Ir para a fase 2' }).click();
 
   // ---------- Fase 2: revê pista e deixa o tempo acabar ----------
@@ -118,56 +134,57 @@ test('partida completa do Cofre', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Rever pista' }).click();
   await page.getByRole('button', { name: 'Jogador 2' }).click();
+  await expect(page.locator('#rever-fichas .ficha-oculta')).toHaveCount(2);
   await segurar(page, page.locator('#rever-segurar'));
-  await expect(page.locator('#rever-fichas .ficha-texto')).toHaveText(pistas[1]);
-  await registrar(page, 'rever-pista');
+  expect(await pistasVisiveis(page, '#rever-fichas')).toEqual(pistas[1]);
+  await registrar(page, 'rever-pista', 400);
   await page.mouse.up();
-  await expect(page.locator('#rever-fichas .ficha')).toHaveCount(0);
+  await expect(page.locator('#rever-fichas .ficha[data-pista]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Voltar para a discussão' }).click();
 
   await page.clock.runFor(112000);
   await expect(page.locator('#relogio')).toHaveClass(/urgente/);
-  await registrar(page, 'ultimos-segundos');
+  await registrar(page, 'ultimos-segundos', 300);
   await page.clock.runFor(9000);
   await expect(page.locator('#resultado-titulo')).toHaveText('Alarme disparado');
   await expect(page.locator('#resultado-motivo')).toContainText('O tempo acabou.');
-  await page.waitForTimeout(700);
-  await registrar(page, 'tempo-acabou');
+  await registrar(page, 'tempo-acabou', 1400);
   await page.getByRole('button', { name: 'Ir para a fase 3' }).click();
 
-  // ---------- Fase 3: pista de domínio e 3 erros ----------
+  // ---------- Fase 3: domínio e 3 erros ----------
   await expect(page.locator('#fase-nome')).toHaveText('Cofre de ouro');
-  await expect(page.locator('#fase-extra')).toHaveText('Uma das pistas fala de domínio de função.');
+  await expect(page.locator('#fase-dominio')).toBeVisible();
+  await expect(page.locator('#fase-dominio')).toContainText('podem entrar na função');
+  await registrar(page, 'fase-3-dominio', 1100);
   pistas = await distribuirPistas(page);
-  expect(pistas.flat().some((t) => t.includes('domínio'))).toBe(true);
+  expect(pistas.flat().some((t) => t.startsWith('Pode entrar em'))).toBe(true);
 
-  // Acha quem tem a pista de domínio e confere que a dica aparece junto.
-  const dono = pistas.findIndex((lista) => lista.some((t) => t.includes('domínio')));
+  // Acha quem tem a pista de domínio e confere fórmula e dica.
+  const dono = pistas.findIndex((lista) => lista.some((t) => t.startsWith('Pode entrar em')));
   await page.getByRole('button', { name: 'Rever pista' }).click();
   await page.getByRole('button', { name: `Jogador ${dono + 1}` }).click();
   await segurar(page, page.locator('#rever-segurar'));
+  await expect(page.locator('#rever-fichas .ficha-dominio .formula')).toBeVisible();
   await expect(page.locator('#rever-fichas .ficha-dica')).toContainText('Dica:');
-  await registrar(page, 'pista-dominio');
+  await registrar(page, 'pista-dominio', 400);
   await page.mouse.up();
   await page.getByRole('button', { name: 'Voltar para a discussão' }).click();
 
   ({ resposta, min } = await senhaDas(page, pistas));
   const errados = [min, min + 1, min + 2, min + 3].filter((n) => n !== resposta).slice(0, 3);
-  await digitar(page, errados[0]);
-  for (const n of errados.slice(1)) {
-    for (const d of String(n)) await page.locator(`[data-tecla="${d}"]`).click();
-    await page.getByRole('button', { name: 'Abrir o cofre' }).click();
-  }
+  await page.getByRole('button', { name: 'Digitar senha' }).click();
+  for (const n of errados) await teclar(page, n);
   await expect(page.locator('#resultado-titulo')).toHaveText('Alarme disparado');
   await expect(page.locator('#resultado-motivo')).toContainText('As 3 tentativas acabaram.');
   await expect(page.locator('#resultado-pistas .porque')).toHaveCount(1);
-  await page.waitForTimeout(700);
-  await registrar(page, 'tentativas-acabaram');
+  await registrar(page, 'tentativas-acabaram', 3200);
 
   // ---------- Placar ----------
   await page.getByRole('button', { name: 'Ver placar' }).click();
   await expect(page.locator('#placar-numero')).toContainText('1 de 3');
-  await registrar(page, 'placar');
+  await expect(page.locator('.medalha.aberta')).toHaveCount(1);
+  await expect(page.locator('.medalha.fechada')).toHaveCount(2);
+  await registrar(page, 'placar', 1500);
 
   expect(errosConsole).toEqual([]);
 
