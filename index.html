@@ -50,6 +50,21 @@
   <div class="sirene" id="sirene" aria-hidden="true"></div>
   <div class="flash" id="flash" aria-hidden="true"></div>
 
+  <!-- Cortina de aço entre as telas -->
+  <div class="cortina" id="cortina" aria-hidden="true">
+    <span class="cortina-lado cortina-esq"></span>
+    <span class="cortina-lado cortina-dir"></span>
+    <span class="cortina-rotulo" id="cortina-rotulo"></span>
+  </div>
+
+  <!-- Cena do cofre: suspense depois de digitar a senha -->
+  <div class="cena" id="cena" hidden>
+    <p class="cena-status" id="cena-status" aria-live="assertive"></p>
+    <div class="cena-palco" id="cena-palco" data-cofre></div>
+    <div class="cena-visor" id="cena-visor"></div>
+    <p class="cena-carimbo" id="cena-carimbo"></p>
+  </div>
+
   <div class="app">
     <header class="topo">
       <span class="marca">O Cofre</span>
@@ -108,7 +123,8 @@
           <button type="button" role="radio" aria-checked="false" data-jogadores="5">5</button>
           <button type="button" role="radio" aria-checked="false" data-jogadores="6">6</button>
         </div>
-        <p class="apoio">Cada fase tem 6 pistas, divididas entre vocês.</p>
+        <div class="nomes" id="nomes"></div>
+        <p class="apoio">Escrevam os nomes, se quiserem. Cada fase tem 6 pistas, divididas entre vocês.</p>
         <button class="btn btn-latao" type="button" id="btn-iniciar">Começar fase 1</button>
       </section>
 
@@ -141,7 +157,7 @@
       <section class="tela" data-tela="passe">
         <p class="sobrancelha" id="passe-fase"></p>
         <div>
-          <p class="vez">Vez do</p>
+          <p class="vez">Vez de</p>
           <h2 class="jogador" id="passe-jogador"></h2>
         </div>
         <p class="apoio" id="passe-aviso"></p>
@@ -338,7 +354,13 @@
           <rect x="6" y="70" width="20" height="30" rx="5"/><rect x="6" y="140" width="20" height="30" rx="5"/>
         </g>
       </svg>
-      <!-- Porta -->
+      <!-- Porta: frente, espessura e verso -->
+      <div class="porta-3d">
+        <span class="porta-camada" style="--z:1"></span><span class="porta-camada" style="--z:2"></span>
+        <span class="porta-camada" style="--z:3"></span><span class="porta-camada" style="--z:4"></span>
+        <span class="porta-camada" style="--z:5"></span><span class="porta-camada" style="--z:6"></span>
+        <span class="porta-camada" style="--z:7"></span><span class="porta-camada" style="--z:8"></span>
+        <span class="porta-verso"></span>
       <svg class="porta" viewBox="0 0 240 240" role="img" aria-label="Porta do cofre">
         <g class="trincos" fill="#8D98A4" stroke="#3A434E" stroke-width="1.5">
           <g transform="rotate(0 120 120)"><rect class="trinco" x="113" y="10" width="14" height="22" rx="3"/></g>
@@ -374,6 +396,7 @@
           <circle cx="120" cy="120" r="10" fill="url(#g-metal)"/>
         </g>
       </svg>
+      </div>
       <div class="particulas" aria-hidden="true"></div>
     </div>
   </template>
