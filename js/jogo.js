@@ -4,9 +4,12 @@
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const esc = (t) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
   const estado = {
     jogadores: 4,
+    nomes: [],
     fase: 0,
     resultados: [],
     enigma: null,
@@ -16,6 +19,7 @@
     fimEm: 0,
     ultimoSegundo: null,
     relogio: null,
+    emCena: false,
     digitado: '',
   };
 
@@ -45,7 +49,18 @@
       const t = audio.currentTime;
       if (tipo === 'tecla') tom(620, t, 0.04, 'triangle', 0.1);
       if (tipo === 'papel') tom(900, t, 0.05, 'triangle', 0.05);
+      if (tipo === 'cortina') tom(140, t, 0.18, 'sawtooth', 0.05);
       if (tipo === 'tique') tom(1100, t, 0.03, 'square', 0.06);
+      if (tipo === 'bip') tom(1320, t, 0.09, 'square', 0.07);
+      if (tipo === 'disco') for (let i = 0; i < 16; i++) tom(1600 - (i % 5) * 90, t + i * 0.09, 0.02, 'square', 0.05);
+      if (tipo === 'coracao') {
+        tom(62, t, 0.16, 'sine', 0.5);
+        tom(55, t + 0.22, 0.2, 'sine', 0.4);
+      }
+      if (tipo === 'clac') {
+        tom(160, t, 0.1, 'square', 0.14);
+        tom(120, t + 0.12, 0.14, 'square', 0.14);
+      }
       if (tipo === 'erro') {
         tom(330, t, 0.18, 'sawtooth', 0.09);
         tom(240, t + 0.2, 0.3, 'sawtooth', 0.09);
@@ -57,9 +72,9 @@
         }
       }
       if (tipo === 'abrir') {
-        for (let i = 0; i < 8; i++) tom(1500 - i * 60, t + i * 0.08, 0.025, 'square', 0.06); // disco girando
-        [0.8, 0.9].forEach((d) => tom(180, t + d, 0.12, 'square', 0.12)); // trincos
-        [523, 659, 784, 1047, 1319].forEach((f, i) => tom(f, t + 1.2 + i * 0.1, 1.1, 'sine', 0.07));
+        const osc = tom(90, t, 1.4, 'sawtooth', 0.05); // rangido da porta
+        osc.frequency.linearRampToValueAtTime(60, t + 1.4);
+        [523, 659, 784, 1047, 1319].forEach((f, i) => tom(f, t + 0.5 + i * 0.1, 1.1, 'sine', 0.07));
       }
     } catch (e) { /* navegador sem áudio */ }
   }
@@ -93,15 +108,35 @@
 
   // ---------- Navegação ----------
   function mostrar(nome) {
-    $$('.tela').forEach((t) => t.classList.toggle('ativa', t.dataset.tela === nome));
+    $$('.tela').forEach((t) => {
+      t.classList.remove('ativa');
+      if (t.dataset.tela === nome) {
+        void t.offsetWidth; // reinicia as animações de entrada mesmo na mesma tela
+        t.classList.add('ativa');
+      }
+    });
     document.body.dataset.telaAtual = nome;
     window.scrollTo(0, 0);
   }
   document.body.dataset.telaAtual = 'inicio';
 
+  // Fecha a cortina de aço, troca a tela por trás dela e abre de novo.
+  async function trocarTela(nome, rotulo, preparar) {
+    const cortina = $('#cortina');
+    $('#cortina-rotulo').innerHTML = rotulo || '';
+    cortina.classList.add('fechada');
+    som('cortina');
+    await esperar(rotulo ? 800 : 360);
+    if (preparar) preparar();
+    mostrar(nome);
+    await esperar(rotulo ? 250 : 60);
+    cortina.classList.remove('fechada');
+  }
+
   $$('[data-ir]').forEach((b) => b.addEventListener('click', () => {
-    if (b.dataset.ir === 'jogadores') delete document.body.dataset.metal;
-    mostrar(b.dataset.ir);
+    trocarTela(b.dataset.ir, '', () => {
+      if (b.dataset.ir === 'jogadores') delete document.body.dataset.metal;
+    });
   }));
 
   // A porta do cofre é a mesma em todas as telas.
@@ -110,6 +145,7 @@
   // ---------- Folhas ----------
   function abrirFolha(id) { $(id).hidden = false; }
   function fecharFolha(id) { $(id).hidden = true; }
+  function fecharFolhas() { $$('.folha').forEach((f) => { f.hidden = true; }); }
 
   $('#btn-regras').addEventListener('click', () => {
     abrirFolha('#folha-regras');
@@ -121,17 +157,49 @@
     if (e.target === folha) folha.hidden = true; // toque fora fecha
   }));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') $$('.folha').forEach((f) => { f.hidden = true; });
+    if (e.key === 'Escape') fecharFolhas();
   });
 
-  // ---------- Jogadores ----------
+  // ---------- Jogadores e nomes ----------
+  let nomesDigitados = [];
+  try { nomesDigitados = JSON.parse(localStorage.getItem('cofre-nomes') || '[]'); } catch (e) { nomesDigitados = []; }
+
+  function desenharNomes() {
+    const lista = $('#nomes');
+    lista.innerHTML = '';
+    for (let i = 0; i < estado.jogadores; i++) {
+      const linha = document.createElement('label');
+      linha.className = 'nome';
+      linha.style.animationDelay = `${i * 40}ms`;
+      linha.innerHTML = `<span aria-hidden="true">${i + 1}</span><input type="text" maxlength="14" autocomplete="off" enterkeyhint="next" placeholder="Jogador ${i + 1}" aria-label="Nome do jogador ${i + 1}">`;
+      const campo = linha.querySelector('input');
+      campo.value = nomesDigitados[i] || '';
+      campo.addEventListener('input', () => {
+        nomesDigitados[i] = campo.value;
+        try { localStorage.setItem('cofre-nomes', JSON.stringify(nomesDigitados)); } catch (e) { /* sem armazenamento */ }
+      });
+      campo.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const proximo = lista.querySelectorAll('input')[i + 1];
+        if (proximo) proximo.focus(); else campo.blur();
+      });
+      lista.appendChild(linha);
+    }
+  }
+  desenharNomes();
+
   $$('[data-jogadores]').forEach((b) => b.addEventListener('click', () => {
     estado.jogadores = Number(b.dataset.jogadores);
     $$('[data-jogadores]').forEach((o) => o.setAttribute('aria-checked', String(o === b)));
+    desenharNomes();
     som('tecla');
   }));
 
+  const nomeDe = (i) => estado.nomes[i];
+
   $('#btn-iniciar').addEventListener('click', () => {
+    estado.nomes = Array.from({ length: estado.jogadores }, (_, i) => (nomesDigitados[i] || '').trim() || `Jogador ${i + 1}`);
     estado.fase = 0;
     estado.resultados = [];
     abrirFase();
@@ -153,14 +221,15 @@
     const pistas = embaralhar(estado.enigma.pistas);
     estado.pistasDe = Array.from({ length: estado.jogadores }, (_, j) => pistas.filter((_, i) => i % estado.jogadores === j));
 
-    document.body.dataset.metal = fase.metal;
-    $('#fase-numero').textContent = estado.fase + 1;
-    $('#fase-num').textContent = `Fase ${estado.fase + 1} de ${FASES.length}`;
-    $('#fase-nome').textContent = fase.nome;
-    $('#fase-faixa').textContent = `A senha é um número de ${fase.min} a ${fase.max}.`;
-    $('#fase-tema').textContent = fase.tema;
-    $('#fase-dominio').hidden = !estado.enigma.pistas.some((p) => p.dominio);
-    mostrar('fase');
+    trocarTela('fase', `<small>Fase ${estado.fase + 1} de ${FASES.length}</small>${fase.nome}`, () => {
+      document.body.dataset.metal = fase.metal;
+      $('#fase-numero').textContent = estado.fase + 1;
+      $('#fase-num').textContent = `Fase ${estado.fase + 1} de ${FASES.length}`;
+      $('#fase-nome').textContent = fase.nome;
+      $('#fase-faixa').textContent = `A senha é um número de ${fase.min} a ${fase.max}.`;
+      $('#fase-tema').textContent = fase.tema;
+      $('#fase-dominio').hidden = !estado.enigma.pistas.some((p) => p.dominio);
+    });
   }
 
   $('#btn-distribuir').addEventListener('click', () => mostrarVez(0));
@@ -225,17 +294,18 @@
   const AVISO_PASSE = 'Segure o botão para ler. Soltou, elas somem.';
 
   function mostrarVez(i) {
-    estado.vez = i;
-    const n = i + 1;
-    const qtd = estado.pistasDe[i].length;
-    $('#passe-fase').textContent = `Fase ${estado.fase + 1} · ${FASES[estado.fase].nome}`;
-    $('#passe-jogador').textContent = `Jogador ${n}`;
-    $('#passe-aviso').textContent = `Só o jogador ${n} olha a tela. Você tem ${qtd} ${qtd === 1 ? 'pista' : 'pistas'}.`;
-    esconderFichas($('#passe-fichas'), qtd, AVISO_PASSE);
-    const passar = $('#btn-passar');
-    passar.disabled = true;
-    passar.textContent = i < estado.jogadores - 1 ? `Passar para o jogador ${n + 1}` : 'Todos viram: começar';
-    mostrar('passe');
+    const nome = nomeDe(i);
+    trocarTela('passe', `<small>Passe o celular para</small>${esc(nome)}`, () => {
+      estado.vez = i;
+      const qtd = estado.pistasDe[i].length;
+      $('#passe-fase').textContent = `Fase ${estado.fase + 1} · ${FASES[estado.fase].nome}`;
+      $('#passe-jogador').textContent = nome;
+      $('#passe-aviso').textContent = `Só ${nome} olha a tela. Você tem ${qtd} ${qtd === 1 ? 'pista' : 'pistas'}.`;
+      esconderFichas($('#passe-fichas'), qtd, AVISO_PASSE);
+      const passar = $('#btn-passar');
+      passar.disabled = true;
+      passar.textContent = i < estado.jogadores - 1 ? `Passar para ${nomeDe(i + 1)}` : 'Todos viram: começar';
+    });
   }
 
   ligarSegurar(
@@ -249,7 +319,7 @@
 
   $('#btn-passar').addEventListener('click', () => {
     if (estado.vez < estado.jogadores - 1) mostrarVez(estado.vez + 1);
-    else comecarDiscussao();
+    else trocarTela('discussao', '<small>Todos viram as pistas</small>Discutam!', comecarDiscussao);
   });
 
   // ---------- Discussão ----------
@@ -291,14 +361,15 @@
 
     estado.fimEm = Date.now() + TEMPO_FASE * 1000;
     estado.ultimoSegundo = null;
+    estado.emCena = false;
     clearInterval(estado.relogio);
     estado.relogio = setInterval(atualizarRelogio, 200);
     atualizarRelogio();
     manterTelaLigada();
-    mostrar('discussao');
   }
 
-  function atualizarRelogio() {
+  async function atualizarRelogio() {
+    if (estado.emCena) return;
     const restante = Math.max(0, Math.ceil((estado.fimEm - Date.now()) / 1000));
     if (restante === estado.ultimoSegundo) return;
     estado.ultimoSegundo = restante;
@@ -312,7 +383,11 @@
       som('tique');
       vibrar(30);
     }
-    if (restante === 0) terminarFase(false, 'O tempo acabou.');
+    if (restante === 0) {
+      clearInterval(estado.relogio);
+      await cena(null, 'alarme', 'O tempo acabou!');
+      terminarFase(false, 'O tempo acabou.');
+    }
   }
 
   // ---------- Teclado da senha ----------
@@ -326,13 +401,15 @@
     $('#btn-abrir').disabled = estado.digitado === '';
   }
 
-  $('#btn-senha').addEventListener('click', () => {
+  function abrirTeclado(mensagem) {
     estado.digitado = '';
-    $('#senha-msg').textContent = '';
+    $('#senha-msg').textContent = mensagem || '';
     $('#visor').classList.remove('errado');
     atualizarVisor();
     abrirFolha('#folha-senha');
-  });
+  }
+
+  $('#btn-senha').addEventListener('click', () => abrirTeclado());
 
   $('#teclado').addEventListener('click', (e) => {
     const tecla = e.target.closest('[data-tecla]');
@@ -347,37 +424,155 @@
     atualizarVisor(v !== 'apagar');
   });
 
-  $('#btn-abrir').addEventListener('click', () => {
-    if (Number(estado.digitado) === estado.enigma.resposta) {
+  $('#btn-abrir').addEventListener('click', async () => {
+    const digitos = estado.digitado;
+    if (Number(digitos) === estado.enigma.resposta) {
+      clearInterval(estado.relogio);
+      await cena(digitos, 'certo');
       terminarFase(true);
       return;
     }
     estado.tentativas -= 1;
     desenharLampadas(estado.tentativas);
     if (estado.tentativas === 0) {
+      clearInterval(estado.relogio);
+      await cena(digitos, 'alarme', 'As tentativas acabaram!');
       terminarFase(false, 'As 3 tentativas acabaram.');
       return;
     }
-    som('erro');
-    vibrar([120, 60, 120]);
-    const visor = $('#visor');
-    visor.classList.remove('errado');
-    void visor.offsetWidth; // reinicia a animação de tremer
-    visor.classList.add('errado');
-    $('#senha-msg').textContent = `ERRADO. ${estado.tentativas === 1 ? 'Resta 1 tentativa' : `Restam ${estado.tentativas} tentativas`}.`;
-    estado.digitado = '';
-    $('#btn-abrir').disabled = true;
+    const restam = estado.tentativas === 1 ? 'Resta 1 tentativa' : `Restam ${estado.tentativas} tentativas`;
+    await cena(digitos, 'errado', restam);
+    abrirTeclado(`ERRADO. ${restam}.`);
+    $('#visor').classList.add('errado');
   });
+
+  // ---------- Cena da senha ----------
+  // O suspense: disco gira, os números acendem, o coração bate e o cofre responde.
+  async function cena(digitos, final, mensagem) {
+    estado.emCena = true;
+    const inicio = Date.now();
+    fecharFolhas();
+
+    const palco = $('#cena');
+    const cofre = $('#cena-palco .cofre');
+    const status = $('#cena-status');
+    const carimbo = $('#cena-carimbo');
+    palco.className = 'cena';
+    cofre.className = 'cofre instantaneo';
+    cofre.querySelector('.particulas').innerHTML = '';
+    carimbo.className = 'cena-carimbo';
+    carimbo.textContent = '';
+    $('#cena-visor').innerHTML = digitos ? [0, 1].slice(0, Math.max(digitos.length, 1)).map(() => '<span>?</span>').join('') : '';
+    status.textContent = digitos ? 'Girando o disco…' : '';
+    palco.hidden = false;
+    void cofre.offsetWidth;
+    cofre.classList.remove('instantaneo');
+
+    if (digitos) {
+      await esperar(350);
+      cofre.classList.add('girando');
+      som('disco');
+      const casas = $$('#cena-visor span');
+      for (let i = 0; i < casas.length; i++) {
+        await esperar(i === 0 ? 450 : 550);
+        casas[i].textContent = digitos[i];
+        casas[i].classList.add('aceso');
+        som('bip');
+        vibrar(20);
+      }
+      await esperar(500);
+      status.textContent = 'Conferindo…';
+      palco.classList.add('suspense');
+      som('coracao');
+      setTimeout(() => som('coracao'), 700);
+      await esperar(final === 'certo' ? 1400 : 1150);
+      palco.classList.remove('suspense');
+    }
+
+    if (final === 'certo') {
+      palco.classList.add('certo');
+      cofre.classList.add('destravado');
+      status.textContent = 'Destravado!';
+      som('clac');
+      vibrar([60, 40, 60]);
+      await esperar(550);
+      cofre.classList.add('aberto');
+      soltarMoedas(cofre, 0.5);
+      acender(['dourado', 'ligado']);
+      som('abrir');
+      vibrar([30, 50, 30, 50, 400]);
+      await esperar(1500);
+      carimbo.textContent = 'Aberto!';
+      carimbo.classList.add('mostrar', 'dourado');
+      await esperar(1400);
+    } else if (final === 'errado') {
+      palco.classList.add('negado');
+      cofre.classList.add('negado');
+      status.textContent = mensagem;
+      carimbo.textContent = 'Errado';
+      carimbo.classList.add('mostrar', 'vermelho');
+      som('erro');
+      vibrar([120, 60, 120]);
+      await esperar(1600);
+    } else {
+      palco.classList.add('alarme');
+      cofre.classList.add('trancado');
+      status.textContent = mensagem;
+      carimbo.textContent = 'Alarme!';
+      carimbo.classList.add('mostrar', 'vermelho');
+      acender(['ligado']);
+      const sirene = $('#sirene');
+      sirene.classList.add('ligada');
+      som('alarme');
+      vibrar([300, 150, 300, 150, 300]);
+      await esperar(2700);
+      sirene.classList.remove('ligada');
+    }
+
+    palco.classList.add('saindo');
+    await esperar(320);
+    palco.hidden = true;
+    estado.emCena = false;
+    if (final === 'errado') estado.fimEm += Date.now() - inicio; // o suspense não gasta o tempo do grupo
+  }
+
+  function soltarMoedas(cofre, atrasoBase) {
+    const tipos = ['', '', 'lingote', 'faisca', 'faisca'];
+    cofre.querySelector('.particulas').innerHTML = Array.from({ length: 40 }, (_, i) => {
+      const angulo = Math.random() * Math.PI * 2;
+      const dist = 110 + Math.random() * 160;
+      const dx = Math.round(Math.cos(angulo) * dist);
+      const dy = Math.round(Math.sin(angulo) * dist * 0.8 - 40);
+      const giro = Math.round(Math.random() * 720 - 360);
+      const atraso = (atrasoBase + Math.random() * 0.4).toFixed(2);
+      return `<span class="particula ${tipos[i % tipos.length]}" style="--dx:${dx}px;--dy:${dy}px;--giro:${giro}deg;--atraso:${atraso}s"></span>`;
+    }).join('');
+  }
+
+  function acender(classes) {
+    const el = $('#flash');
+    el.className = 'flash';
+    void el.offsetWidth;
+    el.classList.add(...classes);
+  }
 
   // ---------- Rever pista ----------
   let revendo = null;
-  const avisoRever = () => `Só o jogador ${revendo + 1} olha. Segure o botão.`;
+  const avisoRever = () => `Só ${nomeDe(revendo)} olha. Segure o botão.`;
 
   $('#btn-rever').addEventListener('click', () => {
     revendo = null;
-    $('#rever-chips').innerHTML = estado.pistasDe.map((_, i) =>
-      `<button type="button" aria-pressed="false" data-rever="${i}">Jogador ${i + 1}</button>`).join('');
-    $('#rever-fichas').innerHTML = '<p class="fichas-aviso">Escolha seu número de jogador.</p>';
+    const chips = $('#rever-chips');
+    chips.innerHTML = '';
+    estado.pistasDe.forEach((_, i) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.dataset.rever = i;
+      chip.setAttribute('aria-pressed', 'false');
+      chip.textContent = nomeDe(i);
+      chips.appendChild(chip);
+    });
+    $('#rever-fichas').innerHTML = '<p class="fichas-aviso">Escolha seu nome.</p>';
     $('#rever-segurar').disabled = true;
     abrirFolha('#folha-rever');
   });
@@ -388,13 +583,13 @@
     revendo = Number(chip.dataset.rever);
     $$('#rever-chips button').forEach((b) => b.setAttribute('aria-pressed', String(b === chip)));
     $('#rever-segurar').disabled = false;
-    esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, avisoRever());
+    esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, esc(avisoRever()));
   });
 
   ligarSegurar(
     $('#rever-segurar'),
     () => mostrarFichas($('#rever-fichas'), estado.pistasDe[revendo]),
-    () => esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, avisoRever()),
+    () => esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, esc(avisoRever())),
   );
 
   $('#btn-rever-fechar').addEventListener('click', () => fecharFolha('#folha-rever'));
@@ -420,43 +615,16 @@
     }).join('');
   }
 
-  function soltarMoedas(cofre) {
-    const tipos = ['', '', 'lingote', 'faisca', 'faisca'];
-    cofre.querySelector('.particulas').innerHTML = Array.from({ length: 34 }, (_, i) => {
-      const angulo = Math.random() * Math.PI * 2;
-      const dist = 90 + Math.random() * 130;
-      const dx = Math.round(Math.cos(angulo) * dist);
-      const dy = Math.round(Math.sin(angulo) * dist * 0.8 - 40);
-      const giro = Math.round(Math.random() * 720 - 360);
-      const atraso = (1.55 + Math.random() * 0.35).toFixed(2);
-      return `<span class="particula ${tipos[i % tipos.length]}" style="--dx:${dx}px;--dy:${dy}px;--giro:${giro}deg;--atraso:${atraso}s"></span>`;
-    }).join('');
-  }
-
-  function acender(el, classes) {
-    el.className = 'flash';
-    void el.offsetWidth;
-    el.classList.add(...classes);
-  }
-
-  let sireneTimer = null;
-
   function terminarFase(abriu, motivo) {
-    clearInterval(estado.relogio);
     soltarTela();
-    $$('.folha').forEach((f) => { f.hidden = true; });
+    fecharFolhas();
 
     const fase = FASES[estado.fase];
     const resposta = estado.enigma.resposta;
     estado.resultados[estado.fase] = abriu;
 
-    // Volta a porta para fechada sem animar, depois dispara a animação nova.
-    const cofre = $('#resultado-cofre .cofre');
-    cofre.classList.remove('aberto', 'trancado');
-    cofre.querySelector('.particulas').innerHTML = '';
-    cofre.querySelectorAll('.porta, .trinco, .brilho, .raios').forEach((el) => { el.style.transition = 'none'; });
-    void cofre.offsetWidth;
-    cofre.querySelectorAll('.porta, .trinco, .brilho, .raios').forEach((el) => { el.style.transition = ''; });
+    // No resultado o cofre já aparece como terminou a cena, sem repetir a animação.
+    $('#resultado-cofre .cofre').className = `cofre instantaneo ${abriu ? 'destravado aberto' : 'alarme-fixo'}`;
 
     const titulo = $('#resultado-titulo');
     titulo.textContent = abriu ? 'Cofre aberto!' : 'Alarme disparado';
@@ -468,25 +636,7 @@
 
     const ultima = estado.fase === FASES.length - 1;
     $('#btn-proxima').textContent = ultima ? 'Ver placar' : `Ir para a fase ${estado.fase + 2}`;
-
     mostrar('resultado');
-    cofre.classList.add(abriu ? 'aberto' : 'trancado');
-
-    clearTimeout(sireneTimer);
-    const sirene = $('#sirene');
-    sirene.classList.remove('ligada');
-    if (abriu) {
-      soltarMoedas(cofre);
-      acender($('#flash'), ['dourado', 'ligado']);
-      som('abrir');
-      vibrar([30, 50, 30, 50, 30, 400, 200]);
-    } else {
-      acender($('#flash'), ['ligado']);
-      sirene.classList.add('ligada');
-      sireneTimer = setTimeout(() => sirene.classList.remove('ligada'), 2800);
-      som('alarme');
-      vibrar([300, 150, 300, 150, 300]);
-    }
   }
 
   const FRASES_PLACAR = [
@@ -503,13 +653,14 @@
       return;
     }
     const abertos = estado.resultados.filter(Boolean).length;
-    delete document.body.dataset.metal;
-    $('#placar-numero').innerHTML = `${abertos} de ${FASES.length}<small>cofres abertos</small>`;
-    $('#medalhas').innerHTML = FASES.map((f, i) => {
-      const ok = estado.resultados[i];
-      return `<span class="medalha medalha-${f.metal} ${ok ? 'aberta' : 'fechada'}" style="--i:${i}" title="${f.nome}: ${ok ? 'aberto' : 'alarme'}">${ok ? '✓' : '✕'}</span>`;
-    }).join('');
-    $('#placar-texto').textContent = FRASES_PLACAR[abertos];
-    mostrar('placar');
+    trocarTela('placar', '<small>Fim de jogo</small>Placar', () => {
+      delete document.body.dataset.metal;
+      $('#placar-numero').innerHTML = `${abertos} de ${FASES.length}<small>cofres abertos</small>`;
+      $('#medalhas').innerHTML = FASES.map((f, i) => {
+        const ok = estado.resultados[i];
+        return `<span class="medalha medalha-${f.metal} ${ok ? 'aberta' : 'fechada'}" style="--i:${i}" title="${f.nome}: ${ok ? 'aberto' : 'alarme'}">${ok ? '✓' : '✕'}</span>`;
+      }).join('');
+      $('#placar-texto').textContent = FRASES_PLACAR[abertos];
+    });
   });
 })();

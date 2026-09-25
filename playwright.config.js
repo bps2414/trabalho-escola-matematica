@@ -4,6 +4,7 @@ module.exports = defineConfig({
   testDir: 'tests',
   timeout: 120000,
   reporter: 'list',
+  expect: { timeout: 12000 },
   use: {
     ...devices['Pixel 7'],
     video: { mode: 'on', size: { width: 412, height: 839 } },
