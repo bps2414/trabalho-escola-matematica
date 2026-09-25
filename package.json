@@ -1,0 +1,10 @@
+{
+  "name": "o-cofre",
+  "private": true,
+  "scripts": {
+    "test": "node tests/validar-enigmas.js && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
