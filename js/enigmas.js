@@ -15,10 +15,6 @@ const listaTabuada = (k, max) => {
 const naTabuada = (k, max) => ({ texto: `Está na tabuada do ${k}.`, ajuda: listaTabuada(k, max), teste: multiplo(k) });
 const foraDaTabuada = (k, max) => ({ texto: `NÃO está na tabuada do ${k}.`, ajuda: `${listaTabuada(k, max)}. Ele não é nenhum desses.`, teste: (n) => n % k !== 0 });
 
-// Fórmulas desenhadas no cartão da pista (raiz com traço em cima, fração empilhada).
-const raiz = (dentro) => `<i>f</i>(<i>x</i>) = <span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro">${dentro}</span></span>`;
-const fracao = (cima, baixo) => `<i>f</i>(<i>x</i>) = <span class="frac"><span>${cima}</span><span>${baixo}</span></span>`;
-
 const FASES = [
   {
     nome: 'Cofre de bronze',
@@ -107,62 +103,41 @@ const FASES = [
   {
     nome: 'Cofre de ouro',
     metal: 'ouro',
-    tema: 'Uma das pistas é de domínio de função.',
+    tema: 'Mistura de tudo: par, ímpar, maior, menor e tabuada.',
     min: 1,
     max: 30,
     enigmas: [
       {
         resposta: 21,
         pistas: [
-          {
-            texto: 'Pode entrar em f(x) = √(x − 20).',
-            formula: raiz('<i>x</i> − 20'),
-            dica: 'Não existe raiz de número negativo. Então x − 20 tem que dar 0 ou mais.',
-            explica: 'x − 20 ≥ 0, então x ≥ 20.',
-            dominio: true,
-            teste: (n) => n - 20 >= 0,
-          },
           { texto: 'É ímpar.', teste: (n) => !par(n) },
           naTabuada(3, 30),
+          { texto: 'É maior que 18.', teste: (n) => n > 18 },
           { texto: 'É menor que 25.', teste: (n) => n < 25 },
-          { texto: 'Não termina em 5.', teste: (n) => n % 10 !== 5 },
-          { texto: 'É maior que 5.', teste: (n) => n > 5 },
+          { texto: 'Tem dois algarismos.', teste: (n) => n >= 10 },
+          { texto: 'Começa com 2.', teste: (n) => n >= 20 && n < 30 },
         ],
       },
       {
-        resposta: 18,
+        resposta: 14,
         pistas: [
-          {
-            texto: 'Pode entrar em f(x) = 10 / (x − 12).',
-            formula: fracao('10', '<i>x</i> − 12'),
-            dica: 'Não dá para dividir por zero. Então x − 12 não pode dar 0.',
-            explica: 'x − 12 = 0 quando x = 12, então o 12 fica de fora.',
-            dominio: true,
-            teste: (n) => n - 12 !== 0,
-          },
           { texto: 'É par.', teste: par },
-          naTabuada(3, 30),
+          naTabuada(7, 30),
           { texto: 'É maior que 10.', teste: (n) => n > 10 },
           { texto: 'É menor que 20.', teste: (n) => n < 20 },
-          { texto: 'Não termina em 4.', teste: (n) => n % 10 !== 4 },
+          { texto: 'Tem dois algarismos.', teste: (n) => n >= 10 },
+          { texto: 'Termina em 4.', teste: (n) => n % 10 === 4 },
         ],
       },
       {
         resposta: 10,
         pistas: [
-          {
-            texto: 'Pode entrar em f(x) = √(x − 8).',
-            formula: raiz('<i>x</i> − 8'),
-            dica: 'Não existe raiz de número negativo. Então x − 8 tem que dar 0 ou mais.',
-            explica: 'x − 8 ≥ 0, então x ≥ 8.',
-            dominio: true,
-            teste: (n) => n - 8 >= 0,
-          },
           { texto: 'É par.', teste: par },
+          naTabuada(5, 30),
           { texto: 'É menor que 15.', teste: (n) => n < 15 },
-          { texto: 'Termina em 0 ou em 2.', teste: (n) => n % 10 === 0 || n % 10 === 2 },
-          foraDaTabuada(3, 30),
-          { texto: 'É menor que 13.', teste: (n) => n < 13 },
+          { texto: 'É maior que 6.', teste: (n) => n > 6 },
+          { texto: 'Termina em 0.', teste: (n) => n % 10 === 0 },
+          { texto: 'Tem dois algarismos.', teste: (n) => n >= 10 },
         ],
       },
     ],
