@@ -8,6 +8,8 @@ Jogo de competição para **um celular só**. Um **líder** fica com o celular, 
 - 3 minutos por fase e 3 tentativas por time
 - No fim, ganha o time que abriu mais cofres
 
+**Outro modo: passar o celular.** Para 3 a 6 pessoas, sem líder. O celular passa de mão em mão, cada um vê só as próprias pistas, e o grupo todo tenta abrir o cofre junto (3 tentativas para o grupo).
+
 ### Publicar no GitHub Pages
 
 1. No GitHub, abra **Settings → General → Danger Zone → Change visibility** e deixe o repositório **público**.
@@ -23,4 +25,4 @@ npm install
 npm test
 ```
 
-O `npm test` confere que todo enigma tem exatamente uma resposta. Depois ele joga uma partida inteira (Time A contra Time B) num celular simulado e salva prints e um vídeo em `evidencias/`.
+O `npm test` confere que todo enigma tem exatamente uma resposta. Depois ele joga uma partida inteira em cada modo num celular simulado e salva prints e um vídeo em `evidencias/`.

@@ -62,12 +62,13 @@ test('partida completa do Cofre no modo líder', async ({ page }) => {
   const regras = page.getByRole('dialog', { name: 'Regras do Cofre' });
   await expect(regras).toBeVisible();
   await expect(regras).toContainText('líder');
+  await expect(regras).toContainText('Outro modo: passar o celular');
   await expect(regras).toContainText('3 tentativas');
   await expect(regras).not.toContainText('omínio');
   await page.getByRole('button', { name: 'Fechar regras' }).click();
   await expect(regras).toBeHidden();
 
-  await page.getByRole('button', { name: 'Começar', exact: true }).click();
+  await page.getByRole('button', { name: 'Jogar com líder: Time A × Time B' }).click();
   await cortinaAberta(page);
   await registrar(page, 'como-jogar', 500);
   await page.getByRole('button', { name: 'Começar fase 1' }).click();

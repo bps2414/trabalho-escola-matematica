@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <!-- Definições compartilhadas pelos desenhos do cofre -->
@@ -88,8 +88,9 @@
       <section class="tela ativa" data-tela="inicio">
         <h1 class="titulo-jogo">O Cofre</h1>
         <div class="cofre-palco" data-cofre></div>
-        <p class="lead">Time A contra Time B. O líder lê as pistas, e o time que descobrir a senha primeiro abre o cofre.</p>
-        <button class="btn btn-latao" type="button" data-ir="como">Começar</button>
+        <p class="lead">Descubram o número secreto e abram o cofre antes do alarme.</p>
+        <button class="btn btn-latao" type="button" data-ir="como" data-modo="lider">Jogar com líder: Time A × Time B</button>
+        <button class="btn btn-aco" type="button" data-ir="como-grupo" data-modo="grupo">Passar o celular: todos juntos</button>
         <p class="rodape">Trabalho de Matemática · 1º ano</p>
       </section>
 
@@ -113,6 +114,41 @@
         <button class="btn btn-latao" type="button" data-iniciar>Começar fase 1</button>
       </section>
 
+      <!-- Como jogar: modo passa o celular -->
+      <section class="tela" data-tela="como-grupo">
+        <p class="sobrancelha">Como jogar · passa o celular</p>
+        <ol class="passos">
+          <li>
+            <h2>Veja suas pistas escondido</h2>
+            <p>Passe o celular. Cada um segura o botão para ver só as próprias pistas.</p>
+          </li>
+          <li>
+            <h2>Fale, não mostre</h2>
+            <p>Contem as pistas em voz alta e risquem os números que não servem.</p>
+          </li>
+          <li>
+            <h2>Abram o cofre juntos</h2>
+            <p>Todos jogam no mesmo time. Vocês têm 3 minutos e 3 tentativas para digitar a senha.</p>
+          </li>
+        </ol>
+        <button class="btn btn-latao" type="button" data-ir="jogadores">Entendi</button>
+      </section>
+
+      <!-- Quantos jogadores (modo passa o celular) -->
+      <section class="tela" data-tela="jogadores">
+        <p class="sobrancelha">Antes de começar</p>
+        <h2 class="titulo">Quantos vão jogar?</h2>
+        <div class="escolha-jogadores" role="radiogroup" aria-label="Número de jogadores">
+          <button type="button" role="radio" aria-checked="false" data-jogadores="3">3</button>
+          <button type="button" role="radio" aria-checked="true" data-jogadores="4">4</button>
+          <button type="button" role="radio" aria-checked="false" data-jogadores="5">5</button>
+          <button type="button" role="radio" aria-checked="false" data-jogadores="6">6</button>
+        </div>
+        <div class="nomes" id="nomes"></div>
+        <p class="apoio">Escrevam os nomes, se quiserem. Cada fase tem 6 pistas, divididas entre vocês.</p>
+        <button class="btn btn-latao" type="button" id="btn-iniciar-grupo">Começar fase 1</button>
+      </section>
+
       <!-- Abertura da fase -->
       <section class="tela" data-tela="fase">
         <div class="medalhao" aria-hidden="true"><span id="fase-numero"></span></div>
@@ -123,6 +159,22 @@
         <button class="btn btn-latao" type="button" id="btn-distribuir">Mostrar pistas</button>
       </section>
 
+      <!-- Passe o celular -->
+      <section class="tela" data-tela="passe">
+        <p class="sobrancelha" id="passe-fase"></p>
+        <div>
+          <p class="vez">Vez de</p>
+          <h2 class="jogador" id="passe-jogador"></h2>
+        </div>
+        <p class="apoio" id="passe-aviso"></p>
+        <div class="fichas" id="passe-fichas" aria-live="polite"></div>
+        <button class="segurar" type="button" id="passe-segurar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+          <span>Segure para ver</span>
+        </button>
+        <button class="btn btn-latao" type="button" id="btn-passar" disabled></button>
+      </section>
+
       <!-- Discussão -->
       <section class="tela tela-discussao" data-tela="discussao">
         <header class="painel">
@@ -130,11 +182,20 @@
             <span class="rotulo">Tempo</span>
             <span class="relogio" id="relogio" role="timer">3:00</span>
           </div>
+          <div class="painel-direita so-grupo">
+            <span class="rotulo">Tentativas</span>
+            <span class="lampadas" id="lampadas-grupo"></span>
+          </div>
           <div class="barra-tempo" aria-hidden="true"><span id="barra-tempo"></span></div>
         </header>
         <p class="apoio" id="discussao-faixa"></p>
-        <div class="fichas fichas-lider" id="pistas-lider"></div>
-        <div class="times">
+        <div class="fichas fichas-lider so-lider" id="pistas-lider"></div>
+        <div class="quadro so-grupo" id="quadro"></div>
+        <div class="acoes so-grupo">
+          <button class="btn btn-aco" type="button" id="btn-rever">Rever pista</button>
+          <button class="btn btn-latao" type="button" id="btn-senha">Digitar senha</button>
+        </div>
+        <div class="times so-lider">
           <div class="card-time time-a">
             <span class="rotulo-time">Time A</span>
             <span class="lampadas" id="lampadas-0"></span>
@@ -192,6 +253,20 @@
         <button type="button" data-tecla="voltar" aria-label="Voltar para a discussão">✕</button>
       </div>
       <button class="btn btn-latao" type="button" id="btn-abrir" disabled>Abrir o cofre</button>
+    </div>
+  </div>
+
+  <!-- Rever pista (modo passa o celular) -->
+  <div class="folha" id="folha-rever" hidden>
+    <div class="folha-corpo" role="dialog" aria-modal="true" aria-labelledby="rever-titulo">
+      <h2 class="folha-titulo" id="rever-titulo">Quem quer rever?</h2>
+      <div class="chips" id="rever-chips"></div>
+      <div class="fichas" id="rever-fichas" aria-live="polite"></div>
+      <button class="segurar segurar-menor" type="button" id="rever-segurar" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+        <span>Segure para ver</span>
+      </button>
+      <button class="btn btn-aco" type="button" id="btn-rever-fechar">Voltar para a discussão</button>
     </div>
   </div>
 
@@ -255,6 +330,17 @@
         <section>
           <h3>Quem ganha o jogo</h3>
           <p>Cada cofre aberto vale <strong>1 ponto</strong>. Depois dos 3 cofres, ganha o time com mais pontos. Deu empate? Joguem de novo.</p>
+        </section>
+        <section>
+          <h3>Outro modo: passar o celular</h3>
+          <p>Para grupos pequenos (3 a 6), sem líder e sem times. Todos jogam juntos contra o cofre.</p>
+          <ol>
+            <li>O celular passa de mão em mão. Cada um <strong>segura o botão</strong> para ver só as próprias pistas. Soltou, elas somem.</li>
+            <li>Todo mundo viu? Falem as pistas em voz alta e <strong>risquem no quadro</strong> os números que não servem.</li>
+            <li>Tiveram certeza? Toquem em <strong>Digitar senha</strong>. O grupo tem 3 tentativas.</li>
+            <li>Esqueceu sua pista? Use <strong>Rever pista</strong>. Não mostre a tela, fale com suas palavras.</li>
+          </ol>
+          <p>No fim aparece quantos cofres o grupo abriu.</p>
         </section>
       </div>
       <button class="btn btn-latao" type="button" id="btn-regras-fechar">Fechar regras</button>
@@ -349,7 +435,7 @@
     </div>
   </template>
 
-  <script src="js/enigmas.js?v=3"></script>
-  <script src="js/jogo.js?v=3"></script>
+  <script src="js/enigmas.js?v=4"></script>
+  <script src="js/jogo.js?v=4"></script>
 </body>
 </html>
