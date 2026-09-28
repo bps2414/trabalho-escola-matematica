@@ -431,6 +431,26 @@ body[data-tela-atual="inicio"] .marca { opacity: 0; }
 .passos h2 { margin: 0 0 2px; font-size: 1.2rem; }
 .passos p { margin: 0; color: var(--cinza); }
 
+/* ---------- Jogadores (modo passa o celular) ---------- */
+.escolha-jogadores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.escolha-jogadores button {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  border: 2px solid var(--aco-claro);
+  background: var(--aco);
+  font-family: var(--fonte-stencil);
+  font-weight: 900;
+  font-size: 2.8rem;
+  transition: transform .2s var(--mola), border-color .2s, background .2s;
+}
+.escolha-jogadores button[aria-checked="true"] {
+  border-color: var(--latao);
+  color: var(--latao-claro);
+  background: #2B2717;
+  transform: scale(1.06);
+  box-shadow: 0 0 0 4px rgba(207,162,75,.15);
+}
+
 /* ---------- Abertura da fase ---------- */
 .medalhao {
   align-self: center;
@@ -452,6 +472,54 @@ body[data-tela-atual="inicio"] .marca { opacity: 0; }
   to { opacity: 1; transform: perspective(600px) rotateY(0) scale(1); }
 }
 [data-tela="fase"] { text-align: center; }
+
+/* ---------- Passe o celular ---------- */
+.vez { margin: 4px 0 0; font-size: 1.1rem; color: var(--cinza); }
+.jogador {
+  margin: 0;
+  font-family: var(--fonte-stencil);
+  font-weight: 900;
+  font-size: clamp(3rem, 17vw, 4.6rem);
+  line-height: .95;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  color: var(--metal);
+}
+
+/* ---------- Nomes dos jogadores ---------- */
+.nomes { display: grid; gap: 8px; }
+.nome {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 10px;
+  animation: entrar .35s var(--mola) both;
+}
+.nome span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--latao-claro), var(--latao) 55%, var(--latao-escuro));
+  color: #1A1408;
+  font-family: var(--fonte-stencil);
+  font-weight: 900;
+  font-size: 1.4rem;
+}
+.nome input {
+  min-height: 48px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--aco-claro);
+  background: #0C0F13;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+}
+.nome input::placeholder { color: #5E6874; font-weight: 400; }
+.nome input:focus { outline: none; border-color: var(--latao); box-shadow: 0 0 0 3px rgba(207,162,75,.25); }
 
 /* ---------- Cortina entre telas ---------- */
 .cortina {
@@ -636,7 +704,74 @@ body[data-tela-atual="inicio"] .marca { opacity: 0; }
   color: #3D3316;
 }
 /* Pistas escondidas: mostra quantas são, sem mostrar o conteúdo */
+.ficha-oculta {
+  padding: 16px;
+  border-radius: 4px 4px 8px 8px;
+  background: repeating-linear-gradient(135deg, #2A3139 0 10px, #252B33 10px 20px);
+  border: 1px solid var(--aco-claro);
+  display: grid;
+  gap: 8px;
+  position: relative;
+}
+.ficha-oculta span { display: block; height: 10px; border-radius: 5px; background: #3A434E; }
+.ficha-oculta span:nth-child(2) { width: 70%; }
+.ficha-oculta::after {
+  content: 'CONFIDENCIAL';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-8deg);
+  padding: 2px 8px;
+  border: 2px solid rgba(226,59,46,.7);
+  border-radius: 4px;
+  font-family: var(--fonte-mono);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  color: rgba(255,120,110,.85);
+}
+.fichas-aviso { margin: 0; text-align: center; color: var(--cinza); font-size: .95rem; }
+
+.segurar {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 6px solid #0C0F13;
+  background: radial-gradient(circle at 35% 30%, var(--latao-claro), var(--latao) 50%, var(--latao-escuro));
+  color: #1A1408;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.15;
+  padding: 18px;
+  box-shadow: 0 0 0 2px var(--aco-claro), 0 12px 26px rgba(0,0,0,.5);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform .12s, box-shadow .2s;
+}
+.segurar svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.segurar:not(:disabled) { animation: chamar 2.4s ease-in-out infinite; }
+@keyframes chamar {
+  0%, 100% { box-shadow: 0 0 0 2px var(--aco-claro), 0 12px 26px rgba(0,0,0,.5), 0 0 0 0 rgba(207,162,75,.45); }
+  50% { box-shadow: 0 0 0 2px var(--aco-claro), 0 12px 26px rgba(0,0,0,.5), 0 0 0 14px rgba(207,162,75,0); }
+}
+.segurar.pressionado {
+  animation: none;
+  transform: scale(.93);
+  box-shadow: 0 0 0 3px var(--latao-claro), 0 0 30px rgba(240,207,126,.5);
+}
+.segurar:disabled { background: var(--aco); color: #5E6874; }
+.segurar-menor { width: 112px; height: 112px; padding: 12px; font-size: .9rem; }
+.segurar-menor svg { width: 28px; height: 28px; }
+
 /* ---------- Discussão ---------- */
+/* Cada modo mostra só as suas partes da tela */
+body[data-modo="lider"] .so-grupo, body[data-modo="grupo"] .so-lider { display: none; }
 .tela-discussao { gap: 12px; }
 .painel {
   position: relative;
@@ -683,7 +818,42 @@ body[data-tela-atual="inicio"] .marca { opacity: 0; }
   100% { transform: scale(1); }
 }
 
-.acoes { display: grid; margin-top: auto; }
+.quadro {
+  display: grid;
+  grid-template-columns: repeat(var(--colunas, 5), 1fr);
+  gap: 6px;
+}
+.quadro button {
+  position: relative;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--aco-claro);
+  background: linear-gradient(180deg, #2A323B, var(--aco));
+  font-family: var(--fonte-mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  overflow: hidden;
+  transition: color .2s, background .2s, transform .1s;
+  animation: entrar .4s var(--mola) both;
+  animation-delay: calc(var(--i) * 12ms);
+}
+.quadro button:active { transform: scale(.92); }
+.quadro button::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: var(--alarme);
+  transform: rotate(-38deg) scaleX(0);
+  transition: transform .2s var(--mola);
+}
+.quadro button[aria-pressed="true"] { color: #4F5863; background: #161B21; border-color: #262D35; }
+.quadro button[aria-pressed="true"]::after { transform: rotate(-38deg) scaleX(1); }
+.acoes { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: auto; }
 
 /* ---------- Times ---------- */
 :root { --time-a: #4EA8FF; --time-b: #FF6B5E; }
@@ -795,6 +965,18 @@ body[data-time="B"] { --metal: var(--time-b); --metal-claro: #FFB3AC; --metal-es
   transition: transform .08s, box-shadow .08s;
 }
 .teclado button:active { transform: translateY(3px); box-shadow: 0 0 0 #161A1F; background: var(--aco-claro); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--aco-claro);
+  background: #2C343E;
+  font-weight: 600;
+}
+.chips button[aria-pressed="true"] { border-color: var(--latao); color: var(--latao-claro); background: #2B2717; }
+#folha-rever .fichas { min-height: 110px; }
 
 .folha-regras { gap: 12px; }
 .regras { overflow-y: auto; display: grid; gap: 18px; padding-right: 4px; margin-right: -4px; }

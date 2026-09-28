@@ -1,7 +1,8 @@
 (() => {
   const TEMPO_FASE = 180; // segundos
-  const TENTATIVAS = 3; // por time
+  const TENTATIVAS = 3; // por time (no modo passa o celular, o grupo todo é um time só)
   const TIMES = ['A', 'B'];
+  const AVISO_PASSE = 'Segure o botão para ler. Soltou, elas somem.';
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -9,10 +10,15 @@
   const esc = (t) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
   const estado = {
+    modo: 'lider', // 'lider' (Time A × Time B) ou 'grupo' (passa o celular, todos juntos)
     fase: 0,
     resultados: [], // índice do time que abriu cada cofre, ou null
     enigma: null,
     pistas: [],
+    jogadores: 4, // só no modo grupo
+    nomes: [],
+    pistasDe: [], // pistasDe[jogador], só no modo grupo
+    vez: 0,
     tentativas: [TENTATIVAS, TENTATIVAS],
     digitando: 0,
     fimEm: 0,
@@ -155,14 +161,71 @@
     if (e.key === 'Escape') fecharFolhas();
   });
 
-  // ---------- Começo do jogo ----------
+  // ---------- Modo e começo do jogo ----------
   const timeDe = (t) => `Time ${TIMES[t]}`;
+  const emGrupo = () => estado.modo === 'grupo';
 
-  $$('[data-iniciar]').forEach((b) => b.addEventListener('click', () => {
+  function escolherModo(modo) {
+    estado.modo = modo;
+    document.body.dataset.modo = modo;
+  }
+  escolherModo('lider');
+  $$('[data-modo]').forEach((b) => b.addEventListener('click', () => escolherModo(b.dataset.modo)));
+
+  function comecarJogo() {
     estado.fase = 0;
     estado.resultados = [];
     abrirFase();
+  }
+
+  // "Jogar de novo": no modo grupo volta para os nomes, no modo líder começa direto.
+  $$('[data-iniciar]').forEach((b) => b.addEventListener('click', () => {
+    if (emGrupo() && b.closest('[data-tela="placar"]')) trocarTela('jogadores', '', () => delete document.body.dataset.metal);
+    else comecarJogo();
   }));
+
+  // ---------- Jogadores e nomes (modo grupo) ----------
+  let nomesDigitados = [];
+  try { nomesDigitados = JSON.parse(localStorage.getItem('cofre-nomes') || '[]'); } catch (e) { nomesDigitados = []; }
+
+  function desenharNomes() {
+    const lista = $('#nomes');
+    lista.innerHTML = '';
+    for (let i = 0; i < estado.jogadores; i++) {
+      const linha = document.createElement('label');
+      linha.className = 'nome';
+      linha.style.animationDelay = `${i * 40}ms`;
+      linha.innerHTML = `<span aria-hidden="true">${i + 1}</span><input type="text" maxlength="14" autocomplete="off" enterkeyhint="next" placeholder="Jogador ${i + 1}" aria-label="Nome do jogador ${i + 1}">`;
+      const campo = linha.querySelector('input');
+      campo.value = nomesDigitados[i] || '';
+      campo.addEventListener('input', () => {
+        nomesDigitados[i] = campo.value;
+        try { localStorage.setItem('cofre-nomes', JSON.stringify(nomesDigitados)); } catch (e) { /* sem armazenamento */ }
+      });
+      campo.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const proximo = lista.querySelectorAll('input')[i + 1];
+        if (proximo) proximo.focus(); else campo.blur();
+      });
+      lista.appendChild(linha);
+    }
+  }
+  desenharNomes();
+
+  $$('[data-jogadores]').forEach((b) => b.addEventListener('click', () => {
+    estado.jogadores = Number(b.dataset.jogadores);
+    $$('[data-jogadores]').forEach((o) => o.setAttribute('aria-checked', String(o === b)));
+    desenharNomes();
+    som('tecla');
+  }));
+
+  const nomeDe = (i) => estado.nomes[i];
+
+  $('#btn-iniciar-grupo').addEventListener('click', () => {
+    estado.nomes = Array.from({ length: estado.jogadores }, (_, i) => (nomesDigitados[i] || '').trim() || `Jogador ${i + 1}`);
+    comecarJogo();
+  });
 
   // ---------- Fase ----------
   function embaralhar(lista) {
@@ -178,6 +241,9 @@
     const fase = FASES[estado.fase];
     estado.enigma = fase.enigmas[Math.floor(Math.random() * fase.enigmas.length)];
     estado.pistas = embaralhar(estado.enigma.pistas);
+    if (emGrupo()) {
+      estado.pistasDe = Array.from({ length: estado.jogadores }, (_, j) => estado.pistas.filter((_, i) => i % estado.jogadores === j));
+    }
 
     trocarTela('fase', `<small>Fase ${estado.fase + 1} de ${FASES.length}</small>${fase.nome}`, () => {
       document.body.dataset.metal = fase.metal;
@@ -186,22 +252,93 @@
       $('#fase-nome').textContent = fase.nome;
       $('#fase-faixa').textContent = `A senha é um número de ${fase.min} a ${fase.max}.`;
       $('#fase-tema').textContent = fase.tema;
+      $('#btn-distribuir').textContent = emGrupo() ? 'Distribuir pistas' : 'Mostrar pistas';
     });
   }
 
   $('#btn-distribuir').addEventListener('click', () => {
-    trocarTela('discussao', `<small>Líder, leia em voz alta</small>Valendo!`, comecarDiscussao);
+    if (emGrupo()) mostrarVez(0);
+    else trocarTela('discussao', `<small>Líder, leia em voz alta</small>Valendo!`, comecarDiscussao);
   });
 
-  // ---------- Pistas (só o líder vê) ----------
+  // ---------- Pistas ----------
+  // Com número (modo líder, todas na tela) ou sem número (cada jogador vê só as suas).
   function fichaHTML(p, i) {
     return `
-      <div class="ficha" data-pista="${p.texto}" style="--i:${i}">
-        <span class="rotulo">Pista ${i + 1}</span>
+      <div class="ficha" data-pista="${p.texto}" style="--i:${i || 0}">
+        <span class="rotulo">Pista${i === undefined ? '' : ` ${i + 1}`}</span>
         <p class="ficha-texto">${p.texto}</p>
         ${p.ajuda ? `<p class="ficha-ajuda">${p.ajuda}</p>` : ''}
       </div>`;
   }
+
+  function mostrarFichas(alvo, pistas) {
+    alvo.innerHTML = pistas.map((p) => fichaHTML(p)).join('');
+    som('papel');
+  }
+
+  function esconderFichas(alvo, qtd, aviso) {
+    const ocultas = Array.from({ length: qtd }, () => '<div class="ficha-oculta"><span></span><span></span></div>').join('');
+    alvo.innerHTML = `${ocultas}<p class="fichas-aviso">${aviso}</p>`;
+  }
+
+  function ligarSegurar(botao, aoMostrar, aoEsconder) {
+    let segurando = false;
+    const mostrarPistas = (e) => {
+      if (botao.disabled) return;
+      if (e.type === 'pointerdown') botao.setPointerCapture(e.pointerId);
+      segurando = true;
+      botao.classList.add('pressionado');
+      vibrar(15);
+      aoMostrar();
+    };
+    const esconder = () => {
+      if (!segurando) return;
+      segurando = false;
+      botao.classList.remove('pressionado');
+      aoEsconder();
+    };
+    botao.addEventListener('pointerdown', mostrarPistas);
+    botao.addEventListener('pointerup', esconder);
+    botao.addEventListener('pointercancel', esconder);
+    botao.addEventListener('lostpointercapture', esconder);
+    botao.addEventListener('keydown', (e) => {
+      if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); mostrarPistas(e); }
+    });
+    botao.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') esconder(); });
+    botao.addEventListener('blur', esconder);
+    botao.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // ---------- Passe o celular (modo grupo) ----------
+  function mostrarVez(i) {
+    const nome = nomeDe(i);
+    trocarTela('passe', `<small>Passe o celular para</small>${esc(nome)}`, () => {
+      estado.vez = i;
+      const qtd = estado.pistasDe[i].length;
+      $('#passe-fase').textContent = `Fase ${estado.fase + 1} · ${FASES[estado.fase].nome}`;
+      $('#passe-jogador').textContent = nome;
+      $('#passe-aviso').textContent = `Só ${nome} olha a tela. Você tem ${qtd} ${qtd === 1 ? 'pista' : 'pistas'}.`;
+      esconderFichas($('#passe-fichas'), qtd, AVISO_PASSE);
+      const passar = $('#btn-passar');
+      passar.disabled = true;
+      passar.textContent = i < estado.jogadores - 1 ? `Passar para ${nomeDe(i + 1)}` : 'Todos viram: começar';
+    });
+  }
+
+  ligarSegurar(
+    $('#passe-segurar'),
+    () => mostrarFichas($('#passe-fichas'), estado.pistasDe[estado.vez]),
+    () => {
+      esconderFichas($('#passe-fichas'), estado.pistasDe[estado.vez].length, AVISO_PASSE);
+      $('#btn-passar').disabled = false;
+    },
+  );
+
+  $('#btn-passar').addEventListener('click', () => {
+    if (estado.vez < estado.jogadores - 1) mostrarVez(estado.vez + 1);
+    else trocarTela('discussao', '<small>Todos viram as pistas</small>Discutam!', comecarDiscussao);
+  });
 
   // ---------- Discussão ----------
   function formatarTempo(s) {
@@ -210,12 +347,14 @@
 
   function desenharLampadas(t, queimou) {
     const resta = estado.tentativas[t];
-    const el = $(`#lampadas-${t}`);
+    const el = $(emGrupo() ? '#lampadas-grupo' : `#lampadas-${t}`);
     el.innerHTML = Array.from({ length: TENTATIVAS }, (_, i) => {
       const gasta = i >= resta;
       return `<span class="lampada${gasta ? ' gasta' : ''}${gasta && i === queimou ? ' queimou' : ''}"></span>`;
     }).join('');
-    el.setAttribute('aria-label', `${timeDe(t)}: ${resta} ${resta === 1 ? 'tentativa' : 'tentativas'}`);
+    const qtd = `${resta} ${resta === 1 ? 'tentativa' : 'tentativas'}`;
+    el.setAttribute('aria-label', emGrupo() ? qtd : `${timeDe(t)}: ${qtd}`);
+    if (emGrupo()) return;
     const botao = $(`[data-digitar="${t}"]`);
     botao.disabled = resta === 0;
     botao.textContent = resta === 0 ? `${timeDe(t)} está fora` : `Resposta do ${timeDe(t)}`;
@@ -223,11 +362,16 @@
 
   function comecarDiscussao() {
     const fase = FASES[estado.fase];
-    estado.tentativas = [TENTATIVAS, TENTATIVAS];
-    TIMES.forEach((_, t) => desenharLampadas(t));
-    $('#discussao-faixa').textContent = `Senha de ${fase.min} a ${fase.max}. Leia as pistas para os dois times. Quando um time disser a resposta, toque no botão dele.`;
-    $('#pistas-lider').innerHTML = estado.pistas.map(fichaHTML).join('');
-    som('papel');
+    estado.tentativas = emGrupo() ? [TENTATIVAS] : [TENTATIVAS, TENTATIVAS];
+    estado.tentativas.forEach((_, t) => desenharLampadas(t));
+    if (emGrupo()) {
+      $('#discussao-faixa').textContent = `Senha de ${fase.min} a ${fase.max}. Toque para riscar os números que não servem.`;
+      desenharQuadro(fase);
+    } else {
+      $('#discussao-faixa').textContent = `Senha de ${fase.min} a ${fase.max}. Leia as pistas para os dois times. Quando um time disser a resposta, toque no botão dele.`;
+      $('#pistas-lider').innerHTML = estado.pistas.map(fichaHTML).join('');
+      som('papel');
+    }
 
     estado.fimEm = Date.now() + TEMPO_FASE * 1000;
     estado.ultimoSegundo = null;
@@ -236,6 +380,23 @@
     estado.relogio = setInterval(atualizarRelogio, 200);
     atualizarRelogio();
     manterTelaLigada();
+  }
+
+  function desenharQuadro(fase) {
+    const quadro = $('#quadro');
+    quadro.innerHTML = '';
+    for (let n = fase.min; n <= fase.max; n++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = n;
+      b.style.setProperty('--i', n - fase.min);
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+        som('tecla');
+      });
+      quadro.appendChild(b);
+    }
   }
 
   async function atualizarRelogio() {
@@ -271,18 +432,19 @@
     $('#btn-abrir').disabled = estado.digitado === '';
   }
 
-  function abrirTeclado(t) {
+  function abrirTeclado(t, mensagem) {
     estado.digitando = t;
     estado.digitado = '';
-    document.body.dataset.time = TIMES[t];
-    $('#senha-titulo').textContent = `Resposta do ${timeDe(t)}`;
-    $('#senha-msg').textContent = '';
+    if (!emGrupo()) document.body.dataset.time = TIMES[t];
+    $('#senha-titulo').textContent = emGrupo() ? 'Digite a senha' : `Resposta do ${timeDe(t)}`;
+    $('#senha-msg').textContent = mensagem || '';
     $('#visor').classList.remove('errado');
     atualizarVisor();
     abrirFolha('#folha-senha');
   }
 
   $$('[data-digitar]').forEach((b) => b.addEventListener('click', () => abrirTeclado(Number(b.dataset.digitar))));
+  $('#btn-senha').addEventListener('click', () => abrirTeclado(0));
 
   $('#teclado').addEventListener('click', (e) => {
     const tecla = e.target.closest('[data-tecla]');
@@ -302,7 +464,7 @@
     const t = estado.digitando;
     if (Number(digitos) === estado.enigma.resposta) {
       clearInterval(estado.relogio);
-      await cena(digitos, 'certo', `${timeDe(t)} abriu!`);
+      await cena(digitos, 'certo', emGrupo() ? '' : `${timeDe(t)} abriu!`);
       terminarFase(t);
       return;
     }
@@ -310,11 +472,18 @@
     desenharLampadas(t, estado.tentativas[t]);
     if (estado.tentativas.every((n) => n === 0)) {
       clearInterval(estado.relogio);
-      await cena(digitos, 'alarme', 'Os dois times erraram 3 vezes!');
-      terminarFase(null, 'Os dois times gastaram as 3 tentativas.');
+      await cena(digitos, 'alarme', emGrupo() ? 'As tentativas acabaram!' : 'Os dois times erraram 3 vezes!');
+      terminarFase(null, emGrupo() ? 'As 3 tentativas acabaram.' : 'Os dois times gastaram as 3 tentativas.');
       return;
     }
     const resta = estado.tentativas[t];
+    if (emGrupo()) {
+      const restam = resta === 1 ? 'Resta 1 tentativa' : `Restam ${resta} tentativas`;
+      await cena(digitos, 'errado', restam);
+      abrirTeclado(0, `ERRADO. ${restam}.`);
+      $('#visor').classList.add('errado');
+      return;
+    }
     const aviso = resta === 0 ? `${timeDe(t)} está fora!` : `${timeDe(t)} errou. ${resta === 1 ? 'Resta 1 tentativa' : `Restam ${resta} tentativas`}`;
     await cena(digitos, 'errado', aviso);
     delete document.body.dataset.time;
@@ -430,6 +599,44 @@
     el.classList.add(...classes);
   }
 
+  // ---------- Rever pista (modo grupo) ----------
+  let revendo = null;
+  const avisoRever = () => `Só ${nomeDe(revendo)} olha. Segure o botão.`;
+
+  $('#btn-rever').addEventListener('click', () => {
+    revendo = null;
+    const chips = $('#rever-chips');
+    chips.innerHTML = '';
+    estado.pistasDe.forEach((_, i) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.dataset.rever = i;
+      chip.setAttribute('aria-pressed', 'false');
+      chip.textContent = nomeDe(i);
+      chips.appendChild(chip);
+    });
+    $('#rever-fichas').innerHTML = '<p class="fichas-aviso">Escolha seu nome.</p>';
+    $('#rever-segurar').disabled = true;
+    abrirFolha('#folha-rever');
+  });
+
+  $('#rever-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-rever]');
+    if (!chip) return;
+    revendo = Number(chip.dataset.rever);
+    $$('#rever-chips button').forEach((b) => b.setAttribute('aria-pressed', String(b === chip)));
+    $('#rever-segurar').disabled = false;
+    esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, esc(avisoRever()));
+  });
+
+  ligarSegurar(
+    $('#rever-segurar'),
+    () => mostrarFichas($('#rever-fichas'), estado.pistasDe[revendo]),
+    () => esconderFichas($('#rever-fichas'), estado.pistasDe[revendo].length, esc(avisoRever())),
+  );
+
+  $('#btn-rever-fechar').addEventListener('click', () => fecharFolha('#folha-rever'));
+
   // ---------- Fim da fase ----------
   function explicarPistas(fase, enigma) {
     const total = fase.max - fase.min + 1;
@@ -464,17 +671,28 @@
     $('#resultado-cofre .cofre').className = `cofre instantaneo ${abriu ? 'destravado aberto' : 'alarme-fixo'}`;
 
     const titulo = $('#resultado-titulo');
-    titulo.textContent = abriu ? `${timeDe(vencedor)} venceu!` : 'Ninguém abriu';
+    const senha = `A senha era <span class="senha-era">${resposta}</span>.`;
+    if (emGrupo()) {
+      titulo.textContent = abriu ? 'Cofre aberto!' : 'Alarme disparado';
+    } else {
+      titulo.textContent = abriu ? `${timeDe(vencedor)} venceu!` : 'Ninguém abriu';
+    }
     titulo.className = `titulo-resultado ${abriu ? 'resultado-ok' : 'resultado-falhou'}`;
-    $('#resultado-motivo').innerHTML = abriu
-      ? `O ${timeDe(vencedor)} abriu o cofre primeiro. A senha era <span class="senha-era">${resposta}</span>.`
-      : `${motivo} A senha era <span class="senha-era">${resposta}</span>.`;
+    if (!abriu) $('#resultado-motivo').innerHTML = `${motivo} ${senha}`;
+    else $('#resultado-motivo').innerHTML = emGrupo() ? senha : `O ${timeDe(vencedor)} abriu o cofre primeiro. ${senha}`;
     $('#resultado-pistas').innerHTML = explicarPistas(fase, estado.enigma);
 
     const ultima = estado.fase === FASES.length - 1;
     $('#btn-proxima').textContent = ultima ? 'Ver placar' : `Ir para a fase ${estado.fase + 2}`;
     mostrar('resultado');
   }
+
+  const FRASES_PLACAR = [
+    'Os alarmes venceram desta vez. Tentem de novo.',
+    'Um cofre aberto. Dá para melhorar na próxima.',
+    'Quase perfeito. Só um alarme disparou.',
+    'Equipe perfeita: nenhum alarme disparou.',
+  ];
 
   $('#btn-proxima').addEventListener('click', () => {
     if (estado.fase < FASES.length - 1) {
@@ -485,13 +703,18 @@
     const [a, b] = TIMES.map((_, t) => estado.resultados.filter((v) => v === t).length);
     trocarTela('placar', '<small>Fim de jogo</small>Placar', () => {
       delete document.body.dataset.metal;
-      $('#placar-numero').innerHTML = `${a} × ${b}<small>Time A × Time B</small>`;
+      $('#placar-numero').innerHTML = emGrupo()
+        ? `${a} de ${FASES.length}<small>cofres abertos</small>`
+        : `${a} × ${b}<small>Time A × Time B</small>`;
       $('#medalhas').innerHTML = FASES.map((f, i) => {
         const v = estado.resultados[i];
         const ok = v !== null;
-        return `<span class="medalha medalha-${f.metal} ${ok ? 'aberta' : 'fechada'}" style="--i:${i}" title="${f.nome}: ${ok ? timeDe(v) : 'ninguém'}">${ok ? TIMES[v] : '✕'}</span>`;
+        const marca = !ok ? '✕' : emGrupo() ? '✓' : TIMES[v];
+        const quem = !ok ? 'ninguém' : emGrupo() ? 'aberto' : timeDe(v);
+        return `<span class="medalha medalha-${f.metal} ${ok ? 'aberta' : 'fechada'}" style="--i:${i}" title="${f.nome}: ${quem}">${marca}</span>`;
       }).join('');
-      $('#placar-texto').textContent = a === b ? 'Empate! Joguem de novo para desempatar.' : `${timeDe(a > b ? 0 : 1)} venceu o jogo!`;
+      if (emGrupo()) $('#placar-texto').textContent = FRASES_PLACAR[a];
+      else $('#placar-texto').textContent = a === b ? 'Empate! Joguem de novo para desempatar.' : `${timeDe(a > b ? 0 : 1)} venceu o jogo!`;
     });
   });
 })();
