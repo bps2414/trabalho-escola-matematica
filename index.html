@@ -7,7 +7,7 @@
   <title>O Cofre</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&family=STIX+Two+Text:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -88,7 +88,7 @@
       <section class="tela ativa" data-tela="inicio">
         <h1 class="titulo-jogo">O Cofre</h1>
         <div class="cofre-palco" data-cofre></div>
-        <p class="lead">Cada um recebe pistas secretas. Juntem tudo e descubram a senha antes do alarme.</p>
+        <p class="lead">Time A contra Time B. O líder lê as pistas, e o time que descobrir a senha primeiro abre o cofre.</p>
         <button class="btn btn-latao" type="button" data-ir="como">Começar</button>
         <p class="rodape">Trabalho de Matemática · 1º ano</p>
       </section>
@@ -98,34 +98,19 @@
         <p class="sobrancelha">Como jogar</p>
         <ol class="passos">
           <li>
-            <h2>Veja suas pistas escondido</h2>
-            <p>Passe o celular. Cada um segura o botão para ver só as próprias pistas.</p>
+            <h2>Um líder e dois times</h2>
+            <p>O líder fica com o celular. O resto da turma se divide em Time A e Time B.</p>
           </li>
           <li>
-            <h2>Fale, não mostre</h2>
-            <p>Contem as pistas em voz alta e risquem os números que não servem.</p>
+            <h2>O líder lê as pistas</h2>
+            <p>Só o líder vê a tela. Ele lê as pistas em voz alta para os dois times.</p>
           </li>
           <li>
-            <h2>Abra o cofre</h2>
-            <p>Vocês têm 2 minutos e 3 tentativas para digitar a senha.</p>
+            <h2>Corrida pelo cofre</h2>
+            <p>Quando um time tiver certeza, fala a resposta para o líder, que digita. Quem acertar primeiro ganha. Cada time tem 3 tentativas.</p>
           </li>
         </ol>
-        <button class="btn btn-latao" type="button" data-ir="jogadores">Entendi</button>
-      </section>
-
-      <!-- Quantos jogadores -->
-      <section class="tela" data-tela="jogadores">
-        <p class="sobrancelha">Antes de começar</p>
-        <h2 class="titulo">Quantos vão jogar?</h2>
-        <div class="escolha-jogadores" role="radiogroup" aria-label="Número de jogadores">
-          <button type="button" role="radio" aria-checked="false" data-jogadores="3">3</button>
-          <button type="button" role="radio" aria-checked="true" data-jogadores="4">4</button>
-          <button type="button" role="radio" aria-checked="false" data-jogadores="5">5</button>
-          <button type="button" role="radio" aria-checked="false" data-jogadores="6">6</button>
-        </div>
-        <div class="nomes" id="nomes"></div>
-        <p class="apoio">Escrevam os nomes, se quiserem. Cada fase tem 6 pistas, divididas entre vocês.</p>
-        <button class="btn btn-latao" type="button" id="btn-iniciar">Começar fase 1</button>
+        <button class="btn btn-latao" type="button" data-iniciar>Começar fase 1</button>
       </section>
 
       <!-- Abertura da fase -->
@@ -135,38 +120,7 @@
         <h2 class="titulo-fase" id="fase-nome"></h2>
         <p class="lead" id="fase-faixa"></p>
         <p class="apoio" id="fase-tema"></p>
-        <div class="dominio-card" id="fase-dominio" hidden>
-          <p class="dominio-o-que"><strong>Domínio</strong> são os números que podem entrar na função sem dar erro.</p>
-          <div class="dominio-exemplos">
-            <div class="dominio-exemplo">
-              <div class="formula formula-mini"><span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro"><i>x</i> − 3</span></span></div>
-              <p>Dentro da raiz não pode ficar negativo.</p>
-              <strong>x ≥ 3</strong>
-            </div>
-            <div class="dominio-exemplo">
-              <div class="formula formula-mini"><span class="frac"><span>1</span><span><i>x</i> − 5</span></span></div>
-              <p>Embaixo da fração não pode dar zero.</p>
-              <strong>x ≠ 5</strong>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-latao" type="button" id="btn-distribuir">Distribuir pistas</button>
-      </section>
-
-      <!-- Passe o celular -->
-      <section class="tela" data-tela="passe">
-        <p class="sobrancelha" id="passe-fase"></p>
-        <div>
-          <p class="vez">Vez de</p>
-          <h2 class="jogador" id="passe-jogador"></h2>
-        </div>
-        <p class="apoio" id="passe-aviso"></p>
-        <div class="fichas" id="passe-fichas" aria-live="polite"></div>
-        <button class="segurar" type="button" id="passe-segurar">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
-          <span>Segure para ver</span>
-        </button>
-        <button class="btn btn-latao" type="button" id="btn-passar" disabled></button>
+        <button class="btn btn-latao" type="button" id="btn-distribuir">Mostrar pistas</button>
       </section>
 
       <!-- Discussão -->
@@ -174,19 +128,23 @@
         <header class="painel">
           <div>
             <span class="rotulo">Tempo</span>
-            <span class="relogio" id="relogio" role="timer">2:00</span>
-          </div>
-          <div class="painel-direita">
-            <span class="rotulo">Tentativas</span>
-            <span class="lampadas" id="lampadas" aria-label="3 tentativas"></span>
+            <span class="relogio" id="relogio" role="timer">3:00</span>
           </div>
           <div class="barra-tempo" aria-hidden="true"><span id="barra-tempo"></span></div>
         </header>
         <p class="apoio" id="discussao-faixa"></p>
-        <div class="quadro" id="quadro"></div>
-        <div class="acoes">
-          <button class="btn btn-aco" type="button" id="btn-rever">Rever pista</button>
-          <button class="btn btn-latao" type="button" id="btn-senha">Digitar senha</button>
+        <div class="fichas fichas-lider" id="pistas-lider"></div>
+        <div class="times">
+          <div class="card-time time-a">
+            <span class="rotulo-time">Time A</span>
+            <span class="lampadas" id="lampadas-0"></span>
+            <button class="btn btn-latao" type="button" data-digitar="0">Resposta do Time A</button>
+          </div>
+          <div class="card-time time-b">
+            <span class="rotulo-time">Time B</span>
+            <span class="lampadas" id="lampadas-1"></span>
+            <button class="btn btn-latao" type="button" data-digitar="1">Resposta do Time B</button>
+          </div>
         </div>
       </section>
 
@@ -208,7 +166,7 @@
         <h2 class="placar" id="placar-numero"></h2>
         <div class="medalhas" id="medalhas"></div>
         <p class="lead" id="placar-texto"></p>
-        <button class="btn btn-latao" type="button" data-ir="jogadores">Jogar de novo</button>
+        <button class="btn btn-latao" type="button" data-iniciar>Jogar de novo</button>
       </section>
     </main>
   </div>
@@ -237,20 +195,6 @@
     </div>
   </div>
 
-  <!-- Rever pista -->
-  <div class="folha" id="folha-rever" hidden>
-    <div class="folha-corpo" role="dialog" aria-modal="true" aria-labelledby="rever-titulo">
-      <h2 class="folha-titulo" id="rever-titulo">Quem quer rever?</h2>
-      <div class="chips" id="rever-chips"></div>
-      <div class="fichas" id="rever-fichas" aria-live="polite"></div>
-      <button class="segurar segurar-menor" type="button" id="rever-segurar" disabled>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
-        <span>Segure para ver</span>
-      </button>
-      <button class="btn btn-aco" type="button" id="btn-rever-fechar">Voltar para a discussão</button>
-    </div>
-  </div>
-
   <!-- Regras completas -->
   <div class="folha" id="folha-regras" hidden>
     <div class="folha-corpo folha-regras" role="dialog" aria-modal="true" aria-labelledby="regras-titulo">
@@ -258,55 +202,39 @@
       <div class="regras">
         <section>
           <h3>Objetivo</h3>
-          <p>Descobrir o número secreto de cada cofre. São 3 cofres: bronze, prata e ouro.</p>
+          <p>Dois times, <strong>A</strong> e <strong>B</strong>, disputam o mesmo cofre. Quem descobrir o número secreto primeiro ganha a fase. São 3 cofres: bronze, prata e ouro.</p>
         </section>
         <section>
           <h3>Uma fase, passo a passo</h3>
           <ol>
-            <li>Passem o celular. Cada jogador <strong>segura o botão</strong> para ver as próprias pistas. Soltou, elas somem.</li>
-            <li>Todo mundo viu? Começa a discussão: falem as pistas em voz alta e <strong>risquem no quadro</strong> os números que não servem.</li>
-            <li>Quando tiverem certeza, toquem em <strong>Digitar senha</strong>.</li>
+            <li>O <strong>líder</strong> fica com o celular e vê todas as pistas. Ele lê as pistas em voz alta para os dois times.</li>
+            <li>Cada time conversa <strong>baixinho</strong> e risca no caderno os números que não servem.</li>
+            <li>Quando o time tiver certeza, fala a resposta para o líder. O líder toca em <strong>Resposta do Time A</strong> (ou B) e digita.</li>
           </ol>
         </section>
         <section>
           <h3>Pode e não pode</h3>
           <ul>
-            <li><strong>Não mostre</strong> sua tela. Fale a pista com suas palavras.</li>
-            <li>Esqueceu sua pista? Use <strong>Rever pista</strong>.</li>
-            <li>As 6 pistas de cada fase são divididas entre vocês. Com 3 jogadores, cada um fica com 2.</li>
+            <li>Só o líder olha a tela.</li>
+            <li>O líder pode reler uma pista quando um time pedir. Vale para os dois times.</li>
+            <li>A resposta é falada só para o líder, sem o outro time ouvir.</li>
           </ul>
         </section>
         <section>
           <h3>Tempo e tentativas</h3>
-          <p>Cada fase tem <strong>2 minutos</strong> e <strong>3 tentativas</strong>. Se o tempo ou as tentativas acabarem, o alarme dispara, o jogo mostra a resposta e segue para o próximo cofre.</p>
+          <p>Cada fase tem <strong>3 minutos</strong>. Cada time tem <strong>3 tentativas</strong>; errou as 3, o time fica fora e o outro continua. Se o tempo acabar, ninguém ganha a fase.</p>
         </section>
         <section>
           <h3>Os cofres</h3>
           <ul class="lista-cofres">
             <li><span class="ponto ponto-bronze"></span><strong>Bronze</strong> · 1 a 20 · par, ímpar, maior e menor</li>
             <li><span class="ponto ponto-prata"></span><strong>Prata</strong> · 1 a 30 · tabuada (a lista vem na pista)</li>
-            <li><span class="ponto ponto-ouro"></span><strong>Ouro</strong> · 1 a 30 · uma pista de domínio</li>
+            <li><span class="ponto ponto-ouro"></span><strong>Ouro</strong> · 1 a 30 · mistura de tudo</li>
           </ul>
         </section>
         <section>
-          <h3>Domínio de função</h3>
-          <p>São os números que podem entrar na função sem dar erro.</p>
-          <div class="dominio-exemplos">
-            <div class="dominio-exemplo">
-              <div class="formula formula-mini"><span class="raiz"><span class="raiz-sinal">√</span><span class="raiz-dentro"><i>x</i> − 3</span></span></div>
-              <p>Dentro da raiz não pode ficar negativo.</p>
-              <strong>x ≥ 3</strong>
-            </div>
-            <div class="dominio-exemplo">
-              <div class="formula formula-mini"><span class="frac"><span>1</span><span><i>x</i> − 5</span></span></div>
-              <p>Embaixo da fração não pode dar zero.</p>
-              <strong>x ≠ 5</strong>
-            </div>
-          </div>
-        </section>
-        <section>
           <h3>Placar</h3>
-          <p>No fim aparece quantos cofres vocês abriram.</p>
+          <p>Cada cofre aberto vale 1 ponto para o time. No fim, ganha o time com mais cofres.</p>
         </section>
       </div>
       <button class="btn btn-latao" type="button" id="btn-regras-fechar">Fechar regras</button>

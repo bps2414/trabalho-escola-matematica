@@ -7,12 +7,9 @@
 //  5. Mais de um número obedece todas as pistas (duas respostas possíveis).
 //  6. Nenhum número obedece todas as pistas.
 //  7. Uma pista sozinha já entrega a resposta (fica sem graça).
-//  8. Na fase 3, a pista de domínio não é necessária (sem ela ainda dá para achar).
-//  9. Pista de domínio sem dica, sem explicação ou sem a fórmula desenhada.
-// 10. A fase 3 não tem nenhuma pista de domínio.
-// 11. Dois enigmas com o mesmo texto de pista repetido dentro dele.
-// 12. Pista de tabuada, soma de algarismos ou dobro sem a linha de ajuda com exemplo.
-// 13. Pista com palavra difícil demais para a turma (divisor, quadrado perfeito).
+//  8. Dois enigmas com o mesmo texto de pista repetido dentro dele.
+//  9. Pista de tabuada, soma de algarismos ou dobro sem a linha de ajuda com exemplo.
+// 10. Pista com palavra difícil demais para a turma (divisor, quadrado perfeito, domínio).
 
 const FASES = require('../js/enigmas.js');
 
@@ -41,22 +38,14 @@ FASES.forEach((fase, i) => {
     pistas.forEach((p) => {
       if (!p.teste(enigma.resposta)) falha(onde, `a resposta não obedece "${p.texto}"`);
       if (candidatos(fase, [p]).length === 1) falha(onde, `a pista "${p.texto}" sozinha já entrega a resposta`);
-      if (p.dominio && (!p.dica || !p.explica || !p.formula)) falha(onde, `pista de domínio "${p.texto}" sem dica, explicação ou fórmula`);
       if (/tabuada|algarismos dele|dobro/i.test(p.texto) && !p.ajuda) falha(onde, `a pista "${p.texto}" precisa de ajuda com exemplo`);
-      if (/divisor|quadrado perfeito/i.test(p.texto)) falha(onde, `a pista "${p.texto}" usa palavra difícil demais`);
+      if (/divisor|quadrado perfeito|domínio|f\(x\)/i.test(p.texto)) falha(onde, `a pista "${p.texto}" usa palavra difícil demais`);
     });
     if (new Set(pistas.map((p) => p.texto)).size !== pistas.length) falha(onde, 'pista repetida');
 
     const sobra = candidatos(fase, pistas);
     if (sobra.length === 0) falha(onde, 'nenhum número obedece todas as pistas');
     if (sobra.length > 1) falha(onde, `mais de uma resposta possível: ${sobra.join(', ')}`);
-
-    if (i === 2) {
-      const dominio = pistas.filter((p) => p.dominio);
-      if (dominio.length === 0) falha(onde, 'fase 3 sem pista de domínio');
-      const semDominio = candidatos(fase, pistas.filter((p) => !p.dominio));
-      if (semDominio.length === 1) falha(onde, 'a pista de domínio não é necessária');
-    }
   });
 });
 

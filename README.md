@@ -2,11 +2,11 @@
 
 ## O Cofre
 
-Jogo cooperativo para **um celular só**. Cada jogador vê pistas secretas sobre um número. O grupo junta as pistas falando, sem mostrar a tela, e tenta abrir o cofre antes do alarme.
+Jogo de competição para **um celular só**. Um **líder** fica com o celular, vê todas as pistas e lê em voz alta. A turma se divide em **Time A** e **Time B**. Quando um time acha a senha, fala para o líder, que digita. Quem abrir o cofre primeiro ganha a fase.
 
-- 3 a 6 jogadores, 3 fases (bronze 1–20, prata 1–30, ouro 1–30)
-- 2 minutos e 3 tentativas por fase
-- A fase 3 tem uma pista de **domínio de função**
+- 3 fases (bronze 1–20, prata 1–30, ouro 1–30), 6 pistas cada
+- 3 minutos por fase e 3 tentativas por time
+- No fim, ganha o time que abriu mais cofres
 
 ### Publicar no GitHub Pages
 
@@ -23,4 +23,4 @@ npm install
 npm test
 ```
 
-O `npm test` confere que todo enigma tem exatamente uma resposta. Depois ele joga uma partida inteira num celular simulado e salva prints e um vídeo em `evidencias/`.
+O `npm test` confere que todo enigma tem exatamente uma resposta. Depois ele joga uma partida inteira (Time A contra Time B) num celular simulado e salva prints e um vídeo em `evidencias/`.
