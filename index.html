@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <!-- Definições compartilhadas pelos desenhos do cofre -->
@@ -107,7 +107,7 @@
           </li>
           <li>
             <h2>Corrida pelo cofre</h2>
-            <p>Quando um time tiver certeza, fala a resposta para o líder, que digita. Quem acertar primeiro ganha. Cada time tem 3 tentativas.</p>
+            <p>O time achou? Fala a resposta no ouvido do líder, e ele digita. Quem acertar primeiro ganha. Cada time tem 3 tentativas.</p>
           </li>
         </ol>
         <button class="btn btn-latao" type="button" data-iniciar>Começar fase 1</button>
@@ -201,28 +201,48 @@
       <h2 class="folha-titulo" id="regras-titulo">Regras do Cofre</h2>
       <div class="regras">
         <section>
-          <h3>Objetivo</h3>
-          <p>Dois times, <strong>A</strong> e <strong>B</strong>, disputam o mesmo cofre. Quem descobrir o número secreto primeiro ganha a fase. São 3 cofres: bronze, prata e ouro.</p>
+          <h3>O jogo em uma frase</h3>
+          <p>O cofre tem um <strong>número secreto</strong>. O líder lê as pistas, e o time que descobrir o número primeiro abre o cofre.</p>
         </section>
         <section>
-          <h3>Uma fase, passo a passo</h3>
+          <h3>Antes de começar</h3>
           <ol>
-            <li>O <strong>líder</strong> fica com o celular e vê todas as pistas. Ele lê as pistas em voz alta para os dois times.</li>
-            <li>Cada time conversa <strong>baixinho</strong> e risca no caderno os números que não servem.</li>
-            <li>Quando o time tiver certeza, fala a resposta para o líder. O líder toca em <strong>Resposta do Time A</strong> (ou B) e digita.</li>
+            <li>Escolham <strong>1 líder</strong>. Ele fica com o celular e não joga.</li>
+            <li>O resto da turma se divide em <strong>Time A</strong> e <strong>Time B</strong>.</li>
+            <li>Cada time pega <strong>papel e caneta</strong> para anotar.</li>
           </ol>
         </section>
         <section>
-          <h3>Pode e não pode</h3>
-          <ul>
-            <li>Só o líder olha a tela.</li>
-            <li>O líder pode reler uma pista quando um time pedir. Vale para os dois times.</li>
-            <li>A resposta é falada só para o líder, sem o outro time ouvir.</li>
-          </ul>
+          <h3>Em cada fase</h3>
+          <ol>
+            <li>O líder toca em <strong>Mostrar pistas</strong>. O relógio de 3 minutos começa.</li>
+            <li>O líder lê as pistas <strong>em voz alta</strong>, uma por uma, na ordem.</li>
+            <li>Cada time conversa <strong>baixinho</strong> e risca no papel os números que não servem.</li>
+            <li>O time achou o número? Uma pessoa do time vai até o líder e <strong>fala no ouvido</strong> (ou mostra no papel).</li>
+            <li>O líder toca em <strong>Resposta do Time A</strong> (ou B), digita o número e toca em <strong>Abrir o cofre</strong>.</li>
+            <li><strong>Acertou:</strong> o time ganha o cofre. <strong>Errou:</strong> o time perde 1 tentativa e a corrida continua.</li>
+          </ol>
         </section>
         <section>
-          <h3>Tempo e tentativas</h3>
-          <p>Cada fase tem <strong>3 minutos</strong>. Cada time tem <strong>3 tentativas</strong>; errou as 3, o time fica fora e o outro continua. Se o tempo acabar, ninguém ganha a fase.</p>
+          <h3>Tentativas</h3>
+          <p>Cada time tem <strong>3 tentativas</strong> por fase (as 3 bolinhas acesas). Errou as 3? O time fica fora dessa fase, e o outro time continua sozinho.</p>
+        </section>
+        <section>
+          <h3>Quando a fase acaba</h3>
+          <ul>
+            <li>Um time acertou: <strong>esse time ganha</strong>.</li>
+            <li>O tempo acabou ou os dois times erraram 3 vezes: <strong>ninguém ganha</strong>.</li>
+          </ul>
+          <p>Depois aparece a senha e como as pistas levavam até ela. O líder lê isso para a turma e toca no botão para ir à próxima fase.</p>
+        </section>
+        <section>
+          <h3>Dicas para o líder</h3>
+          <ul>
+            <li>Só o líder olha a tela. Não mostre para ninguém.</li>
+            <li>Leia devagar. Se pedirem, pode <strong>reler</strong> uma pista, sempre em voz alta para os dois times.</li>
+            <li>Os dois times chegaram juntos? Atenda <strong>um de cada vez</strong>, primeiro quem chegou antes.</li>
+            <li>Não dê dica e não faça cara de "certo" ou "errado". Quem responde é o cofre.</li>
+          </ul>
         </section>
         <section>
           <h3>Os cofres</h3>
@@ -233,8 +253,8 @@
           </ul>
         </section>
         <section>
-          <h3>Placar</h3>
-          <p>Cada cofre aberto vale 1 ponto para o time. No fim, ganha o time com mais cofres.</p>
+          <h3>Quem ganha o jogo</h3>
+          <p>Cada cofre aberto vale <strong>1 ponto</strong>. Depois dos 3 cofres, ganha o time com mais pontos. Deu empate? Joguem de novo.</p>
         </section>
       </div>
       <button class="btn btn-latao" type="button" id="btn-regras-fechar">Fechar regras</button>
@@ -329,7 +349,7 @@
     </div>
   </template>
 
-  <script src="js/enigmas.js?v=2"></script>
-  <script src="js/jogo.js?v=2"></script>
+  <script src="js/enigmas.js?v=3"></script>
+  <script src="js/jogo.js?v=3"></script>
 </body>
 </html>
